@@ -320,8 +320,6 @@ def addResources(helmChart, csvPath):
             with open(filePath, 'r') as f:
                 fileYml = yaml.safe_load(f)
 
-            logging.info("YAML: %s", fileYml)
-
             if "kind" not in fileYml:
                 continue
 
@@ -329,7 +327,6 @@ def addResources(helmChart, csvPath):
                 shutil.copyfile(filePath, os.path.join(helmChart, "templates", os.path.basename(filePath)))
 
             if fileYml['kind'] not in listOfFilesAdded:
-                logging.info("resource %s", filename)
                 logging.error("Found a file of a resource that is not being handled called '%s' in '%s", fileYml['kind'], dirPath)
                 handleAllFiles = True
             continue
