@@ -322,7 +322,8 @@ def addResources(helmChart, csvPath):
             if fileYml['kind'] in otherBundleResourceTypes:
                 shutil.copyfile(filePath, os.path.join(helmChart, "templates", os.path.basename(filePath)))
             if fileYml['kind'] not in listOfFilesAdded:
-                logging.error("Found a file of a resource that is not being handled called '%s' in '%s", fileYml['kind'],dirPath)
+                logging.info("resource %s", filename)
+                logging.error("Found a file of a resource that is not being handled called '%s' in '%s", fileYml['kind'], dirPath)
                 handleAllFiles = True
             continue
         else:
