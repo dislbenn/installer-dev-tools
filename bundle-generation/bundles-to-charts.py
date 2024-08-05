@@ -305,7 +305,7 @@ def addResources(helmChart, csvPath):
     logging.info("Copying over other resources in the bundle if they exist ...")
     dirPath = os.path.dirname(csvPath)
     logging.info("From directory '%s'", dirPath)
-    otherBundleResourceTypes = ["ClusterRole", "ClusterRoleBinding", "Role", "RoleBinding", "Service", "ConfigMap"]
+    otherBundleResourceTypes = ["ClusterRole", "ClusterRoleBinding", "Role", "RoleBinding", "Service", "ServiceAccount", "ConfigMap"]
     # list of files we handle currently
     listOfFilesAdded = ["ClusterRole", "ClusterRoleBinding", "Role", 
     "RoleBinding", "Service", "ClusterManagementAddOn", "CustomResourceDefinition", "ClusterServiceVersion", "ConfigMap"]
