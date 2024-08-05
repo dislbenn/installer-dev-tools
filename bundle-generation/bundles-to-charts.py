@@ -298,8 +298,9 @@ def addResources(helmChart, csvPath):
     
     logging.info("Check to see if there are resources in the csv that aren't getting picked up")
     handleAllFiles = False
+
     # Current list of resources we handle
-    listOfResourcesAdded = ["deployments", "clusterPermissions", "permissions", "ServiceAccount", "CustomResourceDefinition"]
+    listOfResourcesAdded = ["deployments", "clusterPermissions", "permissions", "CustomResourceDefinition"]
     for resource in csv['spec']['install']['spec']:
         if resource not in listOfResourcesAdded:
             logging.error("Found a resource in the csv not being handled called '%s' in '%s'", resource, csvPath)
@@ -307,8 +308,10 @@ def addResources(helmChart, csvPath):
 
     logging.info("Copying over other resources in the bundle if they exist ...")
     dirPath = os.path.dirname(csvPath)
+
     logging.info("From directory '%s'", dirPath)
     otherBundleResourceTypes = ["ClusterRole", "ClusterRoleBinding", "Role", "RoleBinding", "Service", "ServiceAccount", "ConfigMap"]
+
     # list of files we handle currently
     listOfFilesAdded = ["ClusterRole", "ClusterRoleBinding", "Role", 
     "RoleBinding", "Service", "ServiceAccount" "ClusterManagementAddOn", "CustomResourceDefinition", "ClusterServiceVersion", "ConfigMap"]
@@ -317,10 +320,13 @@ def addResources(helmChart, csvPath):
             filePath = os.path.join(dirPath, filename)
             with open(filePath, 'r') as f:
                 fileYml = yaml.safe_load(f)
+
             if "kind" not in fileYml:
                 continue
+
             if fileYml['kind'] in otherBundleResourceTypes:
                 shutil.copyfile(filePath, os.path.join(helmChart, "templates", os.path.basename(filePath)))
+
             if fileYml['kind'] not in listOfFilesAdded:
                 logging.info("resource %s", filename)
                 logging.error("Found a file of a resource that is not being handled called '%s' in '%s", fileYml['kind'], dirPath)
