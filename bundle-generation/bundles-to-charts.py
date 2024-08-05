@@ -321,6 +321,8 @@ def addResources(helmChart, csvPath):
             with open(filePath, 'r') as f:
                 fileYml = yaml.safe_load(f)
 
+            logging.info("YAML", fileYml)
+
             if "kind" not in fileYml:
                 continue
 
