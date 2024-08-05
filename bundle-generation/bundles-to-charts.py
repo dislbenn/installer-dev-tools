@@ -281,22 +281,25 @@ def addResources(helmChart, csvPath):
     # Check for deployments
     for deployment in csv['spec']['install']['spec']['deployments']:
         addDeployment(helmChart, deployment)
+
     # Check for clusterroles, clusterrolebindings, and serviceaccounts
     if 'clusterPermissions' in csv['spec']['install']['spec']:
         clusterPermissions = csv['spec']['install']['spec']['clusterPermissions']
         for clusterRole in clusterPermissions:
             addClusterScopedRBAC(helmChart, clusterRole)
+
     # Check for roles, rolebindings, and serviceaccounts
     if 'permissions' in csv['spec']['install']['spec']:
         permissions = csv['spec']['install']['spec']['permissions']
         for role in permissions:
             addNamespaceScopedRBAC(helmChart, role)
+
     logging.info("Resources have been successfully added to chart '%s' from CSV '%s'.\n", helmChart, csvPath)
     
     logging.info("Check to see if there are resources in the csv that aren't getting picked up")
     handleAllFiles = False
     # Current list of resources we handle
-    listOfResourcesAdded = ["deployments", "clusterPermissions", "permissions", "CustomResourceDefinition"]
+    listOfResourcesAdded = ["deployments", "clusterPermissions", "permissions", "ServiceAccount", "CustomResourceDefinition"]
     for resource in csv['spec']['install']['spec']:
         if resource not in listOfResourcesAdded:
             logging.error("Found a resource in the csv not being handled called '%s' in '%s'", resource, csvPath)
