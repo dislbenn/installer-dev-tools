@@ -313,8 +313,7 @@ def addResources(helmChart, csvPath):
     otherBundleResourceTypes = ["ClusterRole", "ClusterRoleBinding", "Role", "RoleBinding", "Service", "ServiceAccount", "ConfigMap"]
 
     # list of files we handle currently
-    listOfFilesAdded = ["ClusterRole", "ClusterRoleBinding", "Role", 
-    "RoleBinding", "Service", "ServiceAccount" "ClusterManagementAddOn", "CustomResourceDefinition", "ClusterServiceVersion", "ConfigMap"]
+    listOfFilesAdded = ["ClusterRole", "ClusterRoleBinding", "Role", "RoleBinding", "Service", "ServiceAccount", "ClusterManagementAddOn", "CustomResourceDefinition", "ClusterServiceVersion", "ConfigMap"]
     for filename in os.listdir(dirPath):
         if filename.endswith(".yaml") or filename.endswith(".yml"):
             filePath = os.path.join(dirPath, filename)
