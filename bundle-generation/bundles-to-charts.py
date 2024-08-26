@@ -464,6 +464,10 @@ def injectHelmFlowControl(deployment, sizes):
 
         if line.strip() == "env:" or line.strip() == "env: {}":
             lines[i] = """        env:
+        {{- range .Values.global.envOverrides }}
+        - name: {{ .name }}
+          value: {{ .value | quote }}
+        {{- end }}
 {{- if .Values.hubconfig.proxyConfigs }}
         - name: HTTP_PROXY
           value: {{ .Values.hubconfig.proxyConfigs.HTTP_PROXY }}
@@ -904,8 +908,6 @@ def main():
         else:
             logging.critical("Config entry doesn't specify either a Git repo or a generation command")
             exit(1)
-
-        
 
         # Loop through each operator in the repo identified by the config
         for operator in repo["operators"]:
