@@ -465,10 +465,10 @@ def injectHelmFlowControl(deployment, sizes):
         if line.strip() == "env:" or line.strip() == "env: {}":
             lines[i] = """        env:
         {{- if .Values.global.envOverrides }}
-            {{- range .Values.global.envOverrides }}
-            - name: {{ .name }}
-            value: {{ .value | quote }}
-            {{- end }}
+        {{- range .Values.global.envOverrides }}
+        - name: {{ .name }}
+          value: {{ .value | quote }}
+        {{- end }}
         {{- end }}
 {{- if .Values.hubconfig.proxyConfigs }}
         - name: HTTP_PROXY
