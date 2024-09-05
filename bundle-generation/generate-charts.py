@@ -646,7 +646,14 @@ def getChartVersion(updateChartVersion, repo):
         logging.warning("No branch specified for repo %s, skip.", repo["repo_name"])
         return chartVersion
 
-    version = repo['branch'].replace("backplane-", "")
+    version = repo['branch']
+
+    # Replace 'backplane-' or 'release-' with an empty string
+    if version.startswith("backplane-"):
+        version = version.replace("backplane-", "")
+    elif version.startswith("release-"):
+        version = version.replace("release-", "")
+        
     if not version.replace(".", "").isdecimal():
         logging.warning("Unable to use branch name %s as chart version for repo %s, skip.",
                         repo['branch'], repo["branch"])
