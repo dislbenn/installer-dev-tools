@@ -171,25 +171,40 @@ def updateResources(outputDir, repo, chart):
 def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
     chartName = chart['name']
     logging.info("Copying templates into new '%s' chart directory ...", chartName)
-    # Create main folder
+
+    # Define paths
     chartPath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "tmp", repo, chart["chart-path"])
+    destinationTemplateDir = os.path.join(destinationChartPath, "templates")
+    chartYamlPath = os.path.join(chartPath, "Chart.yaml")
+
     if os.path.exists(destinationChartPath):
         shutil.rmtree(destinationChartPath)
     
-    # Copy Chart.yaml, values.yaml, and templates dir
-
-    destinationTemplateDir = os.path.join(destinationChartPath, "templates")
     os.makedirs(destinationTemplateDir)
 
-    chartYamlPath = os.path.join(chartPath, "Chart.yaml")
     if not os.path.exists(chartYamlPath):
         logging.info("No Chart.yaml for chart: ", chartName)
         return
+    
+    # Read Chart.yaml to check for dependencies
+    with open(chartYamlPath, 'r') as f:
+        chartYaml = yaml.safe_load(f)
+    
+    if 'dependencies' in chartYaml and chartYaml['dependencies']:
+        logging.info("Dependencies found in Chart.yaml for chart: %s", chartName)
+        
+        # Copy Chart.yaml to new location if dependencies exist
+        dependencyChartYamlPath = os.path.join(destinationChartPath, "Chart.yaml")
+        shutil.copyfile(chartYamlPath, dependencyChartYamlPath)
+        
+        # Build dependencies
+        helmDependencyOutput = subprocess.getoutput(['helm', 'dependency', 'build', chartPath])
+        logging.info("helm dependency build output: %s", helmDependencyOutput)
+    else:
+        logging.info("No dependencies found in Chart.yaml for chart: %s", chartName)
 
     # Update chart version if specified before rendering templates
-    if chartVersion != "":
-        with open(chartYamlPath, 'r') as f:
-            chartYaml = yaml.safe_load(f)
+    if chartVersion:
         chartYaml['version'] = chartVersion
         with open(chartYamlPath, 'w') as f:
             yaml.dump(chartYaml, f, width=float("inf"))
@@ -198,25 +213,22 @@ def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
     if os.path.exists(specificValues):
         shutil.copyfile(specificValues, os.path.join(chartPath, "values.yaml"))
 
-    helmTemplateOutput = subprocess.getoutput(['helm dependency build'])
-    logging.info("output: %s", helmTemplateOutput)
-    # helmTemplateOutput = subprocess.getoutput(['helm template '+ chartPath])
+    helmTemplateOutput = subprocess.getoutput(['helm template '+ chartPath])
+    logging.info("helm template output: %s", helmTemplateOutput)
+    
     yamlList = helmTemplateOutput.split('---')
     for outputContent in yamlList:
-        logging.info("output: %s" % outputContent)
         yamlContent = yaml.safe_load(outputContent)
         if yamlContent is None:
             continue
         newFileName = yamlContent['kind'].lower() + '.yaml'
         newFilePath= os.path.join(destinationTemplateDir, newFileName)
-        a_file = open(newFilePath, "w")
-        a_file.writelines(outputContent)
-        a_file.close()
+        with open(newFilePath, "w") as a_file:
+            a_file.writelines(outputContent)
 
-    shutil.copyfile(chartYamlPath, os.path.join(destinationChartPath, "Chart.yaml"))
-
-    shutil.copyfile(os.path.join(chartPath, "values.yaml"), os.path.join(destinationChartPath, "values.yaml"))
     # Copying template values.yaml instead of values.yaml from chart
+    shutil.copyfile(chartYamlPath, os.path.join(destinationChartPath, "Chart.yaml"))
+    shutil.copyfile(os.path.join(chartPath, "values.yaml"), os.path.join(destinationChartPath, "values.yaml"))
     shutil.copyfile(os.path.join(os.path.dirname(os.path.realpath(__file__)), "chart-templates", "values.yaml"), os.path.join(destinationChartPath, "values.yaml"))
 
     logging.info("Chart copied.\n")
