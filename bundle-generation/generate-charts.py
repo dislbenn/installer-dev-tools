@@ -201,7 +201,7 @@ def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
         
         # Build dependencies
         try:
-            helmDependencyOutput = subprocess.getoutput(['helm', 'dependency', 'build', chartPath])
+            helmDependencyOutput = subprocess.getoutput(['helm dependency build '+ chartPath])
             logging.info("helm dependency build output: %s", helmDependencyOutput)
         except Exception as e:
             logging.error("Error building Helm dependencies: %s", str(e))
