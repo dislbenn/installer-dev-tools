@@ -199,7 +199,8 @@ def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
         shutil.copyfile(specificValues, os.path.join(chartPath, "values.yaml"))
 
     helmTemplateOutput = subprocess.getoutput(['helm dependency build'])
-    helmTemplateOutput = subprocess.getoutput(['helm template '+ chartPath])
+    logging.info("output: %s", helmTemplateOutput)
+    # helmTemplateOutput = subprocess.getoutput(['helm template '+ chartPath])
     yamlList = helmTemplateOutput.split('---')
     for outputContent in yamlList:
         logging.info("output: %s" % outputContent)
