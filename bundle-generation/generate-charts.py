@@ -176,6 +176,8 @@ def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
     chartPath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "tmp", repo, chart["chart-path"])
     destinationTemplateDir = os.path.join(destinationChartPath, "templates")
     chartYamlPath = os.path.join(chartPath, "Chart.yaml")
+    
+    logging.info("Chart path: %s", chartPath)
 
     if os.path.exists(destinationChartPath):
         shutil.rmtree(destinationChartPath)
@@ -198,8 +200,11 @@ def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
         shutil.copyfile(chartYamlPath, dependencyChartYamlPath)
         
         # Build dependencies
-        helmDependencyOutput = subprocess.getoutput(['helm', 'dependency', 'build', chartPath])
-        logging.info("helm dependency build output: %s", helmDependencyOutput)
+        try:
+            helmDependencyOutput = subprocess.getoutput(['helm', 'dependency', 'build', chartPath])
+            logging.info("helm dependency build output: %s", helmDependencyOutput)
+        except Exception as e:
+            logging.error("Error building Helm dependencies: %s", str(e))
     else:
         logging.info("No dependencies found in Chart.yaml for chart: %s", chartName)
 
