@@ -201,7 +201,7 @@ def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
     helmTemplateOutput = subprocess.getoutput(['helm template '+ chartPath])
     yamlList = helmTemplateOutput.split('---')
     for outputContent in yamlList:
-        logging.info("output:", outputContent)
+        logging.info("output: %s" % outputContent)
         yamlContent = yaml.safe_load(outputContent)
         if yamlContent is None:
             continue
