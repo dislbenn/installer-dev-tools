@@ -611,12 +611,10 @@ def addCRDs(repo, chart, outputDir):
     if not os.path.exists(chartPath):
         logging.critical("Could not validate chartPath at given path: " + chartPath)
         exit(1)
-    
-    logging.info("CRD", repo)
-    
+
     crdPath = os.path.join(chartPath, "crds")
     if not os.path.exists(crdPath):
-        logging.info("No CRDs for repo: ", repo)
+        logging.info("No CRDs for repo: %s", repo)
         return
 
     destinationPath = os.path.join(outputDir, chart['name'], "crds")
