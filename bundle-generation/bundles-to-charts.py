@@ -517,7 +517,7 @@ def injectHelmFlowControl(deployment, sizes):
 
             # If seccompProfile is present, check deployOnOCP first
             if next_line.strip() == "type: RuntimeDefault":
-                insertFlowControlIfAround(lines, i, i+1, ".Values.global.deployOnOCP")
+                insertFlowControlIfAround(lines, i-1, i+1, ".Values.global.deployOnOCP")
 
                 # After inserting deployOnOCP check, add semverCompare check
                 if "seccompProfile:" in lines[i]:
