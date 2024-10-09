@@ -431,6 +431,7 @@ def insertFlowControlIfAround(lines_list, first_line_index, last_line_index, if_
    lines_list[last_line_index] = "%s{{- end }}\n" % lines_list[last_line_index]
 
 def is_version_compatible(branch, min_version):
+    logging.info(f"branch {branch}, min_version {min_version}")
     # Extract the version part from the branch name (e.g., '2.12-integration' -> '2.12')
     version = branch.split('-')[0]
     branch_version = Version(version) # Create a Version object
