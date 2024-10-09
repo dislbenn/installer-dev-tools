@@ -643,7 +643,7 @@ def updateRBAC(helmChart):
     logging.info("Clusterroles, roles, clusterrolebindings, and rolebindings updated. \n")
 
 
-def injectRequirements(helmChart, operator, exclusions, sizes):
+def injectRequirements(helmChart, operator, exclusions, sizes, branch):
     logging.info("Updating Helm chart '%s' with onboarding requirements ...", helmChart)
     imageKeyMapping = operator.get('imageMappings', {})
 
@@ -653,7 +653,7 @@ def injectRequirements(helmChart, operator, exclusions, sizes):
 
     # Updates RBAC and deployment configuration in the Helm chart.
     updateRBAC(helmChart)
-    updateDeployments(helmChart, operator, exclusions, sizes)
+    updateDeployments(helmChart, operator, exclusions, sizes, branch)
 
     logging.info("Updated Chart '%s' successfully\n", helmChart)
 
@@ -996,7 +996,7 @@ def main():
             if not skipOverrides:
                 logging.info("Adding Overrides to helm chart '%s' (set --skipOverrides=true to skip) ...", operator["name"])
                 exclusions = operator["exclusions"] if "exclusions" in operator else []
-                injectRequirements(helmChart, operator, exclusions, sizes)
+                injectRequirements(helmChart, operator, exclusions, sizes, branch)
                 logging.info("Overrides added to helm chart '%s' successfully.", operator["name"])
 
     logging.info("All repositories and operators processed successfully.")
