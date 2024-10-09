@@ -3,6 +3,7 @@
 # Copyright Contributors to the Open Cluster Management project
 # Assumes: Python 3.6+
 
+from packaging.version import Version
 import argparse
 import os
 import shutil
@@ -429,8 +430,17 @@ def insertFlowControlIfAround(lines_list, first_line_index, last_line_index, if_
    lines_list[first_line_index] = "{{- if %s }}\n%s" % (if_condition, lines_list[first_line_index])
    lines_list[last_line_index] = "%s{{- end }}\n" % lines_list[last_line_index]
 
+def is_version_compatible(branch, min_version):
+    # Extract the version part from the branch name (e.g., '2.12-integration' -> '2.12')
+    version = branch.split('-')[0]
+    branch_version = Version(version) # Create a Version object
+    min_branch_version = Version(min_version) # Convert the min_branch to a Version object
+
+    # Check if the branch version is compatible with the specified minimum branch
+    return branch_version >= min_branch_version
+
 # injectHelmFlowControl injects advanced helm flow control which would typically make a .yaml file more difficult to parse. This should be called last.
-def injectHelmFlowControl(deployment, sizes):
+def injectHelmFlowControl(deployment, sizes, branch):
     logging.info("Adding Helm flow control for NodeSelector, Proxy Overrides and SecCompProfile...")
     deploy = open(deployment, "r")
     with open(deployment, 'r') as f:
@@ -473,6 +483,12 @@ def injectHelmFlowControl(deployment, sizes):
           value: {{ .Values.hubconfig.proxyConfigs.NO_PROXY }}
 {{- end }}
 """     
+
+        if is_version_compatible(branch, '2.12'):
+            if 'replicas:' in line.strip():
+                lines[i] = """  replicas: {{ .Values.hubconfig.replicaCount }}
+"""
+            
         if sizes:
             for sizDeployment in sizes["deployments"]:
                 if sizDeployment["name"] == deployx["metadata"]["name"]:
@@ -523,7 +539,7 @@ def injectHelmFlowControl(deployment, sizes):
     logging.info("Added Helm flow control for NodeSelector, Proxy Overrides and SecCompProfile.\n")
 
 # updateDeployments adds standard configuration to the deployments (antiaffinity, security policies, and tolerations)
-def updateDeployments(helmChart, operator, exclusions, sizes):
+def updateDeployments(helmChart, operator, exclusions, sizes, branch):
     logging.info("Updating deployments with antiaffinity, security policies, and tolerations ...")
     deploySpecYaml = os.path.join(os.path.dirname(os.path.realpath(__file__)), "chart-templates/templates/deploymentspec.yaml")
     with open(deploySpecYaml, 'r') as f:
@@ -606,7 +622,7 @@ def updateDeployments(helmChart, operator, exclusions, sizes):
             yaml.dump(deploy, f)
         logging.info("Deployments updated with antiaffinity, security policies, and tolerations successfully. \n")
 
-        injectHelmFlowControl(deployment, sizes)
+        injectHelmFlowControl(deployment, sizes, branch)
 
 # updateRBAC adds standard configuration to the RBAC resources (clusterroles, roles, clusterrolebindings, and rolebindings)
 def updateRBAC(helmChart):
