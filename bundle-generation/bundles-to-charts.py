@@ -12,6 +12,7 @@ import array
 import logging
 import coloredlogs
 import sys
+import re
 from git import Repo, exc
 from packaging import version
 
@@ -433,12 +434,23 @@ def insertFlowControlIfAround(lines_list, first_line_index, last_line_index, if_
 def is_version_compatible(branch, min_version):
     logging.info(f"branch {branch}, min_version {min_version}")
     # Extract the version part from the branch name (e.g., '2.12-integration' -> '2.12')
-    version = branch.split('-')[0]
-    branch_version = Version(version) # Create a Version object
-    min_branch_version = Version(min_version) # Convert the min_branch to a Version object
+    pattern = r'(\d+\.\d+)'  # Matches versions like '2.12'
+    
+    if branch == "main":
+        return True
+    
+    match = re.search(pattern, branch)
+    if match:
+        version = match.group(1)  # Extract the version
+        branch_version = Version(version)  # Create a Version object
+        min_branch_version = Version(min_version)  # Convert the min_version to a Version object
 
-    # Check if the branch version is compatible with the specified minimum branch
-    return branch_version >= min_branch_version
+        # Check if the branch version is compatible with the specified minimum branch
+        return branch_version >= min_branch_version
+
+    else:
+        logging.error(f"Version not found in branch: {branch}")
+        return False
 
 # injectHelmFlowControl injects advanced helm flow control which would typically make a .yaml file more difficult to parse. This should be called last.
 def injectHelmFlowControl(deployment, sizes, branch):
