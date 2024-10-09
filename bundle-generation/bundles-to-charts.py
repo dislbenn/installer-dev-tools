@@ -431,8 +431,9 @@ def insertFlowControlIfAround(lines_list, first_line_index, last_line_index, if_
    lines_list[first_line_index] = "{{- if %s }}\n%s" % (if_condition, lines_list[first_line_index])
    lines_list[last_line_index] = "%s{{- end }}\n" % lines_list[last_line_index]
 
-def is_version_compatible(branch, min_version):
-    logging.info(f"branch {branch}, min_version {min_version}")
+def is_version_compatible(branch, min_release_version, min_backplane_version):
+    logging.info(f"branch: {branch}, min_release_version: {min_release_version}, min_backplane_version: {min_backplane_version}")
+
     # Extract the version part from the branch name (e.g., '2.12-integration' -> '2.12')
     pattern = r'(\d+\.\d+)'  # Matches versions like '2.12'
     
@@ -443,7 +444,14 @@ def is_version_compatible(branch, min_version):
     if match:
         version = match.group(1)  # Extract the version
         branch_version = Version(version)  # Create a Version object
-        min_branch_version = Version(min_version)  # Convert the min_version to a Version object
+        
+        if "release" in branch:
+            min_branch_version = Version(min_release_version)  # Use the minimum release version
+        elif "backplane" in branch:
+            min_branch_version = Version(min_backplane_version)  # Use the minimum backplane version
+        else:
+            logging.error(f"Unrecognized branch type for branch: {branch}")
+            return False
 
         # Check if the branch version is compatible with the specified minimum branch
         return branch_version >= min_branch_version
