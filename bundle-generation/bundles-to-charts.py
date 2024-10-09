@@ -937,7 +937,7 @@ def main():
                 logging.error("Unable to find given channel: %s", operator.get("channel", "Channel not specified"))
                 exit(1)
 
-            logging.info("repo", repo, repo["branch"])
+            logging.info(f"repo: {repo} branch {repo["branch"]}")
             # if "branch" in repo["branch"]:
             #     branch = repo["branch"]
             # else:
