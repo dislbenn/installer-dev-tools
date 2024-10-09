@@ -447,7 +447,7 @@ def is_version_compatible(branch, min_release_version, min_backplane_version):
         
         if "release" in branch:
             min_branch_version = Version(min_release_version)  # Use the minimum release version
-        elif "backplane" in branch:
+        elif "backplane" or "mce" in branch:
             min_branch_version = Version(min_backplane_version)  # Use the minimum backplane version
         else:
             logging.error(f"Unrecognized branch type for branch: {branch}")
