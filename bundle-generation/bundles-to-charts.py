@@ -938,10 +938,10 @@ def main():
                 exit(1)
 
             logging.info(f"repo: {repo['branch']}")
-            # if "branch" in repo["branch"]:
-            #     branch = repo["branch"]
-            # else:
-            #     branch = ""
+            if "branch" in repo:
+                branch = repo["branch"]
+            else:
+                branch = ""
 
             logging.info("Reading CSV: %s ...",  csvPath)
             # Validate CSV exists
