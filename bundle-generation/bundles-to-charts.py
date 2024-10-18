@@ -13,7 +13,7 @@ import coloredlogs
 import sys
 import re
 from git import Repo, exc
-from packaging import version
+from packaging.version import Version
 
 from validate_csv import *
 
@@ -440,12 +440,12 @@ def is_version_compatible(branch, min_release_version, min_backplane_version):
     match = re.search(pattern, branch)
     if match:
         version = match.group(1)  # Extract the version
-        branch_version = version.Version(version)  # Create a Version object
+        branch_version = Version(version)  # Create a Version object
         
         if "release" in branch:
-            min_branch_version = version.Version(min_release_version)  # Use the minimum release version
-        elif "backplane" or "mce" in branch:
-            min_branch_version = version.Version(min_backplane_version)  # Use the minimum backplane version
+            min_branch_version = Version(min_release_version)  # Use the minimum release version
+        elif "backplane" in branch:
+            min_branch_version = Version(min_backplane_version)  # Use the minimum backplane version
         else:
             logging.error(f"Unrecognized branch type for branch: {branch}")
             return False
