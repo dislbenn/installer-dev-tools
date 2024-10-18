@@ -10,6 +10,7 @@ import yaml
 import logging
 import coloredlogs
 import subprocess
+import re
 from git import Repo, exc
 
 from validate_csv import *
