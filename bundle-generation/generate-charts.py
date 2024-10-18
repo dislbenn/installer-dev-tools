@@ -435,7 +435,7 @@ def addPullSecretOverride(deployment):
         a_file.close()
 
 # updateDeployments adds standard configuration to the deployments (antiaffinity, security policies, and tolerations)
-def updateDeployments(chartName, helmChart, exclusions, inclusions):
+def updateDeployments(chartName, helmChart, exclusions, inclusions, branch):
     logging.info("Updating deployments with antiaffinity, security policies, and tolerations ...")
     deploySpecYaml = os.path.join(os.path.dirname(os.path.realpath(__file__)), "chart-templates/templates/deploymentspec.yaml")
     with open(deploySpecYaml, 'r') as f:
@@ -612,7 +612,7 @@ def injectRequirements(helmChart, chartName, imageKeyMapping, skipRBACOverrides,
     injectAnnotationsForAddonTemplate(helmChart)
     if not skipRBACOverrides:
         updateRBAC(helmChart, chartName)
-    updateDeployments(chartName, helmChart, exclusions, inclusions)
+    updateDeployments(chartName, helmChart, exclusions, inclusions, branch)
 
     logging.info("Updated Chart '%s' successfully\n", helmChart)
 
