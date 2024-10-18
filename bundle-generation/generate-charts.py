@@ -11,6 +11,7 @@ import logging
 import coloredlogs
 import subprocess
 import re
+from packaging import version
 from git import Repo, exc
 
 from validate_csv import *
