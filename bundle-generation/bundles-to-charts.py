@@ -442,9 +442,9 @@ def is_version_compatible(branch, min_release_version, min_backplane_version):
         v = match.group(1)  # Extract the version
         branch_version = version.Version(v)  # Create a Version object
         
-        if "release" in branch:
+        if "release" in branch and "release-ocm" not in branch:
             min_branch_version = version.Version(min_release_version)  # Use the minimum release version
-        elif "backplane" or "mce" or "release-ocm" in branch:
+        elif "backplane" in branch or "mce" in branch:
             min_branch_version = version.Version(min_backplane_version)  # Use the minimum backplane version
         else:
             logging.error(f"Unrecognized branch type for branch: {branch}")
