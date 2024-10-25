@@ -400,17 +400,17 @@ def injectHelmFlowControl(deployment, branch):
 {{- end }}
 """
 
-        if is_version_compatible(branch, '2.13', '2.8'):
-            if 'replicas:' in line.strip():
-                lines[i] = """  replicas: {{ .Values.hubconfig.replicaCount }}
-"""
+#         if is_version_compatible(branch, '2.13', '2.8'):
+#             if 'replicas:' in line.strip():
+#                 lines[i] = """  replicas: {{ .Values.hubconfig.replicaCount }}
+# """
 
         if line.strip() == "seccompProfile:":
             next_line = lines[i+1]  # Ignore possible reach beyond end-of-list, not really possible
             prev_line = lines[i-1]
             if next_line.strip() == "type: RuntimeDefault" and "semverCompare" not in prev_line:
                 insertFlowControlIfAround(lines, i, i+1, "semverCompare \">=4.11.0\" .Values.hubconfig.ocpVersion")
-                if is_version_compatible(branch, '2.12', '2.7'):
+                if is_version_compatible(branch, '2.13', '2.7'):
                     insertFlowControlIfAround(lines, i, i+1, ".Values.global.deployOnOCP")
 
         a_file = open(deployment, "w")
@@ -435,7 +435,7 @@ def addPullSecretOverride(deployment):
         a_file.close()
 
 # updateDeployments adds standard configuration to the deployments (antiaffinity, security policies, and tolerations)
-def updateDeployments(chartName, helmChart, exclusions, inclusions):
+def updateDeployments(chartName, helmChart, exclusions, inclusions, branch):
     logging.info("Updating deployments with antiaffinity, security policies, and tolerations ...")
     deploySpecYaml = os.path.join(os.path.dirname(os.path.realpath(__file__)), "chart-templates/templates/deploymentspec.yaml")
     with open(deploySpecYaml, 'r') as f:
@@ -612,7 +612,7 @@ def injectRequirements(helmChart, chartName, imageKeyMapping, skipRBACOverrides,
     injectAnnotationsForAddonTemplate(helmChart)
     if not skipRBACOverrides:
         updateRBAC(helmChart, chartName)
-    updateDeployments(chartName, helmChart, exclusions, inclusions)
+    updateDeployments(chartName, helmChart, exclusions, inclusions, branch)
 
     logging.info("Updated Chart '%s' successfully\n", helmChart)
 
@@ -644,7 +644,7 @@ def addCRDs(repo, chart, outputDir):
     
     crdPath = os.path.join(chartPath, "crds")
     if not os.path.exists(crdPath):
-        logging.info("No CRDs for repo: ", repo)
+        logging.info(f"No CRDs for repo: {repo}")
         return
 
     destinationPath = os.path.join(outputDir, chart['name'], "crds")
@@ -764,6 +764,13 @@ def main():
                 inclusions = chart["inclusions"] if "inclusions" in chart else []
                 injectRequirements(destinationChartPath, chart["name"], chart["imageMappings"], chart["skipRBACOverrides"], exclusions, inclusions, branch)
                 logging.info("Overrides added. \n")
+
+    logging.info("All repositories and operators processed successfully.")
+    logging.info("Performing cleanup...")
+    shutil.rmtree((os.path.join(os.path.dirname(os.path.realpath(__file__)), "tmp")), ignore_errors=True)
+
+    logging.info("Cleanup completed.")
+    logging.info("Script execution completed.")
 
 if __name__ == "__main__":
    main()
