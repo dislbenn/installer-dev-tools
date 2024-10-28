@@ -506,13 +506,13 @@ def injectHelmFlowControl(deployment, sizes, branch):
 #             if 'replicas:' in line.strip():
 #                 lines[i] = """  replicas: {{ .Values.hubconfig.replicaCount }}
 # """
-            
-        if sizes:
-            for sizDeployment in sizes["deployments"]:
-                if sizDeployment["name"] == deployx["metadata"]["name"]:
-                    for container in sizDeployment["containers"]:
-                        if line.strip() == "resources: REPLACE-" + container["name"]:
-                            lines[i] = """        resources:
+        if is_version_compatible(branch, '2.13', '2.8'):
+            if sizes:
+                for sizDeployment in sizes["deployments"]:
+                    if sizDeployment["name"] == deployx["metadata"]["name"]:
+                        for container in sizDeployment["containers"]:
+                            if line.strip() == "resources: REPLACE-" + container["name"]:
+                                lines[i] = """        resources:
 {{-  if eq .values.hubconfig.hubSize "Small" }}
           limits:
             cpu: """ + container["Small"]["limits"]["cpu"] + """
