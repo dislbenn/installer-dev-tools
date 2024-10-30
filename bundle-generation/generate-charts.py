@@ -689,6 +689,46 @@ def getChartVersion(updateChartVersion, repo):
     # TODO: consider getting chart version from chart template
     return chartVersion
 
+def renderChart(chart_path):
+    # Define the path for the values.yaml file
+    values_file_path = os.path.join(chart_path, 'values.yaml')
+    
+    # Load the values from the values.yaml file
+    with open(values_file_path, 'r') as f:
+        values = yaml.safe_load(f)
+
+    # Here, you would modify the values dictionary as needed
+    # For example, adding or overriding values from a flat YAML
+    overrides = {
+        'image': {
+            'repository': 'your-custom-repo',
+            'tag': 'latest'
+        },
+        # Add other overrides here
+    }
+    values.update(overrides)
+
+    # Create a temporary values file to pass to Helm
+    temp_values_file = os.path.join(chart_path, 'temp_values.yaml')
+    with open(temp_values_file, 'w') as f:
+        yaml.dump(values, f)
+
+    try:
+        # Use the Helm command to render the chart
+        logging.info("Rendering chart '%s'...", chart_path)
+        subprocess.run(
+            ['helm', 'template', chart_path, '-f', temp_values_file],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        logging.info("Chart rendered successfully.")
+    except subprocess.CalledProcessError as e:
+        logging.error("Error rendering chart: %s", e.stderr.decode())
+    finally:
+        # Clean up the temporary values file
+        if os.path.exists(temp_values_file):
+            os.remove(temp_values_file)
 
 def main():
     ## Initialize ArgParser
@@ -755,6 +795,9 @@ def main():
             # Template Helm Chart Directory from 'chart-templates'
             logging.info("Templating helm chart '%s' ...", chart["name"])
             copyHelmChart(destinationChartPath, repo["repo_name"], chart, chartVersion)
+
+            # Render the chart here
+            renderChart(destinationChartPath)
 
             updateResources(destination, repo["repo_name"], chart)
 
