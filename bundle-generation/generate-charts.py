@@ -202,7 +202,7 @@ def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
 
     # helmDependencyOutput = subprocess.getoutput(['helm dependency build '+ chartPath])
     # logging.info(f"helm dependency build {helmDependencyOutput}")
-    helmTemplateOutput = subprocess.getoutput(['helm template '+ chartPath + ' --skip-deps'])
+    helmTemplateOutput = subprocess.getoutput(['helm template '+ chartPath + ' --debug'])
     logging.info(f"helm template {helmTemplateOutput}")
     yamlList = helmTemplateOutput.split('---')
     logging.info(f"yamlList {yamlList}")
