@@ -215,7 +215,7 @@ def extractDependencies(chartPath):
             except Exception as e:
                 logging.error(f"Failed to extract {tgzPath}: {e}")
 
-    logging.info(f"Found {len(dependencies)} dependencies in {chartPath}.")
+    logging.info(f"Extracted {len(dependencies)} dependencies in {chartPath}.")
     return dependencies
 
 # Copy chart-templates to a new helmchart directory
