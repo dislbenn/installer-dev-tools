@@ -189,7 +189,20 @@ def processSubchart(destinationChartPath, subchartPath):
     """Recursive processing for subcharts."""
     logging.info(f"Processing subchart: {subchartPath}")
     try:
-        # copyHelmChart(destinationChartPath, "", {"name": os.path.basename(subchartPath), "chart-path": subchartPath}, "")
+        # List all files and directories in subchartPath
+        if os.path.exists(subchartPath):
+            logging.info(f"Contents of {subchartPath}:")
+            for root, dirs, files in os.walk(subchartPath):
+                for file in files:
+                    logging.info(f"File found: {os.path.join(root, file)}")
+                for dir in dirs:
+                    logging.info(f"Directory found: {os.path.join(root, dir)}")
+        else:
+            logging.error(f"Subchart path does not exist: {subchartPath}")
+        
+        # Process the subchart (here you can add your specific logic)
+        # Example: copyHelmChart(destinationChartPath, "", {"name": os.path.basename(subchartPath), "chart-path": subchartPath}, "")
+        
         logging.info(f"Successfully processed subchart: {subchartPath}")
     except Exception as e:
         logging.error(f"Error processing subchart {subchartPath}: {e}")
