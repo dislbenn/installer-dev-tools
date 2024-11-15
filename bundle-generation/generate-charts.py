@@ -189,7 +189,7 @@ def processSubchart(destinationChartPath, subchartPath):
     """Recursive processing for subcharts."""
     logging.info(f"Processing subchart: {subchartPath}")
     try:
-        # copyHelmChart(destinationChartPath, "", {"name": os.path.basename(subchartPath), "chart-path": subchartPath}, "")
+        copyHelmChart(destinationChartPath, "", {"name": os.path.basename(subchartPath), "chart-path": subchartPath}, "")
         logging.info(f"Successfully processed subchart: {subchartPath}")
     except Exception as e:
         logging.error(f"Error processing subchart {subchartPath}: {e}")
