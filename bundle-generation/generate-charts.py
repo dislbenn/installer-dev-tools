@@ -211,6 +211,8 @@ def extractDependencies(chartPath):
                 with tarfile.open(tgzPath, "r:gz") as tar:
                     tar.extractall(path=subchartDir)
                     logging.info(f"Extracted {tgzPath} to {subchartDir}.")
+                    if os.path.exists(subchartDir):
+                        logging.info(f"Subchart directory contents before extraction: {os.listdir(subchartDir)}")
                 dependencies.append(subchartDir)
             except Exception as e:
                 logging.error(f"Failed to extract {tgzPath}: {e}")
