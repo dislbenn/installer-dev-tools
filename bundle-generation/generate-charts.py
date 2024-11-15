@@ -219,29 +219,19 @@ def extractDependencies(chartPath):
     for file in os.listdir(chartsDir):
         if file.endswith(".tgz"):
             tgzPath = os.path.join(chartsDir, file)
-            subchartName = os.path.splitext(file)[0]  # Get the subchart name without version
-            subchartDir = os.path.join(chartsDir, subchartName)  # Directory where we will extract the subchart
-
-            # Ensure the subchart directory exists
-            if not os.path.exists(subchartDir):
-                os.makedirs(subchartDir)
             
             try:
                 with tarfile.open(tgzPath, "r:gz") as tar:
-                    # Extract all members in the tgz file to the target subchartDir
-                    for member in tar.getmembers():
-                        # Ensure files are extracted directly into the subchartDir (flightctl-ui)
-                        member.name = os.path.basename(member.name)  # Strip out the folder structure from the tarball
-                        tar.extract(member, path=subchartDir)
-                    logging.info(f"Extracted {tgzPath} contents directly into {subchartDir}.")
-
-                dependencies.append(subchartDir)
+                    # Extract all files directly without manipulating directory names.
+                    tar.extractall(path=chartsDir)
+                    logging.info(f"Extracted {tgzPath} into {chartsDir}.")
+                
+                dependencies.append(tgzPath)  # You can append the path of the tgz file or extracted directory if needed
             except Exception as e:
                 logging.error(f"Failed to extract {tgzPath}: {e}")
 
     logging.info(f"Extracted {len(dependencies)} dependencies in {chartPath}.")
     return dependencies
-
 
 # Copy chart-templates to a new helmchart directory
 def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
