@@ -4,17 +4,20 @@
 # Assumes: Python 3.6+
 
 import argparse
-import os
-import shutil
-import yaml
 import logging
-import coloredlogs
-import subprocess
+import os
 import re
+import shutil
+import subprocess
+import tarfile
+import yaml
+
+import coloredlogs
 from git import Repo, exc
 from packaging import version
 
 from validate_csv import *
+
 
 # Configure logging with coloredlogs
 coloredlogs.install(level='DEBUG')  # Set the logging level as needed
@@ -168,6 +171,38 @@ def updateResources(outputDir, repo, chart):
     # Escape template variables
     escapeTemplateVariables(chartDir, chart["escape-template-variables"])
 
+def hasDependencies(chartYamlPath):
+    """Check if the Chart.yaml file specifies dependencies."""
+    if not os.path.exists(chartYamlPath):
+        return False
+
+    with open(chartYamlPath, 'r') as f:
+        chartYaml = yaml.safe_load(f)
+
+    dependencies = chartYaml.get('dependencies', [])
+    return len(dependencies) > 0
+
+def processSubchart(destinationChartPath, subchartPath):
+    # Recursive processing for subcharts
+    logging.info(f"Processing subchart: {subchartPath}")
+    copyHelmChart(destinationChartPath, "", {"name": os.path.basename(subchartPath), "chart-path": subchartPath}, "")
+
+def extractDependencies(chartPath):
+    chartsDir = os.path.join(chartPath, "charts")
+    if not os.path.exists(chartsDir):
+        return []
+
+    dependencies = []
+    for file in os.listdir(chartsDir):
+        if file.endswith(".tgz"):
+            tgzPath = os.path.join(chartsDir, file)
+            subchartDir = os.path.join(chartsDir, os.path.splitext(file)[0])
+            with tarfile.open(tgzPath, "r:gz") as tar:
+                tar.extractall(path=subchartDir)
+                logging.info(f"Extracted {tgzPath} to {subchartDir}")
+            dependencies.append(subchartDir)
+
+    return dependencies
 
 # Copy chart-templates to a new helmchart directory
 def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
@@ -187,6 +222,18 @@ def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
     if not os.path.exists(chartYamlPath):
         logging.info("No Chart.yaml for chart: ", chartName)
         return
+    
+    # Check for dependencies before building
+    if hasDependencies(chartYamlPath):
+        helmDependencyOutput = subprocess.getoutput(f'helm dependency build {chartPath}')
+        logging.info(f"helm dependency build: {helmDependencyOutput}")
+
+        # Check and process dependencies
+        dependencies = extractDependencies(chartPath)
+        for dependency in dependencies:
+            processSubchart(destinationChartPath, dependency)
+    else:
+        logging.info(f"No dependencies found for chart: {chartName}")
 
     # Update chart version if specified before rendering templates
     if chartVersion != "":
@@ -200,8 +247,8 @@ def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
     if os.path.exists(specificValues):
         shutil.copyfile(specificValues, os.path.join(chartPath, "values.yaml"))
 
-    # helmDependencyOutput = subprocess.getoutput(['helm dependency build '+ chartPath])
-    # logging.info(f"helm dependency build {helmDependencyOutput}")
+    helmDependencyOutput = subprocess.getoutput(['helm dependency build '+ chartPath])
+    logging.info(f"helm dependency build {helmDependencyOutput}")
     helmTemplateOutput = subprocess.getoutput(['helm template '+ chartPath])
     logging.info(f"helm template {helmTemplateOutput}")
     yamlList = helmTemplateOutput.split('---')
