@@ -222,6 +222,10 @@ def extractDependencies(chartPath):
             
             try:
                 with tarfile.open(tgzPath, "r:gz") as tar:
+                    logging.info(f"Contents of {tgzPath}:")
+                    for member in tar.getmembers():
+                        logging.info(f" - {member.name}")
+
                     # Extract all files directly without manipulating directory names.
                     tar.extractall(path=chartsDir)
                     logging.info(f"Extracted {tgzPath} into {chartsDir}.")
