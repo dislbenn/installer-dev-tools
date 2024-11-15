@@ -230,10 +230,14 @@ def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
     if os.path.exists(destinationChartPath):
         shutil.rmtree(destinationChartPath)
     
+    logging.info(f"destinationChartPath: {destinationChartPath}")
+    
     # Copy Chart.yaml, values.yaml, and templates dir
 
     destinationTemplateDir = os.path.join(destinationChartPath, "templates")
     os.makedirs(destinationTemplateDir)
+    
+    logging.info(f"destinationTemplateDir: {destinationTemplateDir}")
 
     chartYamlPath = os.path.join(chartPath, "Chart.yaml")
     if not os.path.exists(chartYamlPath):
