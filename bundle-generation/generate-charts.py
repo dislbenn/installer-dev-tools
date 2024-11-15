@@ -173,7 +173,7 @@ def updateResources(outputDir, repo, chart):
 
 def hasDependencies(chartYamlPath):
     """Check if the Chart.yaml file specifies dependencies."""
-    logging.info(f"Checking for dependencies in {chartYamlPath}...")
+    logging.info(f"Checking for dependencies in {chartYamlPath} ...")
     if not os.path.exists(chartYamlPath):
         logging.warning(f"Chart.yaml not found at {chartYamlPath}.")
         return False
@@ -196,7 +196,7 @@ def processSubchart(destinationChartPath, subchartPath):
 
 def extractDependencies(chartPath):
     """Extract dependencies (subcharts) from the charts/ directory."""
-    logging.info(f"Checking for dependencies in {chartPath}...")
+    logging.info(f"Preparing to extract dependencies in {chartPath} ...")
     chartsDir = os.path.join(chartPath, "charts")
     if not os.path.exists(chartsDir):
         logging.warning(f"No charts/ directory found in {chartPath}.")
