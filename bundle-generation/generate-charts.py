@@ -265,18 +265,25 @@ def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
     if chartVersion != "":
         with open(chartYamlPath, 'r') as f:
             chartYaml = yaml.safe_load(f)
+
         chartYaml['version'] = chartVersion
         with open(chartYamlPath, 'w') as f:
             yaml.dump(chartYaml, f, width=float("inf"))
+            
+    logging.info(f"2 chartVersion {chartVersion}")
 
     specificValues = os.path.join(os.path.dirname(os.path.realpath(__file__)), "chart-values", chart['name'], "values.yaml")
     if os.path.exists(specificValues):
         shutil.copyfile(specificValues, os.path.join(chartPath, "values.yaml"))
+        
+    logging.info(f"specificValues {specificValues}")
 
     helmTemplateOutput = subprocess.getoutput(['helm template '+ chartPath])
     logging.info(f"helm template {helmTemplateOutput}")
+
     yamlList = helmTemplateOutput.split('---')
     logging.info(f"yamlList {yamlList}")
+
     for outputContent in yamlList:
         logging.info(f"output {outputContent}")
         yamlContent = yaml.safe_load(outputContent)
