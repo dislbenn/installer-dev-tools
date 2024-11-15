@@ -219,11 +219,15 @@ def extractDependencies(chartPath):
     for file in os.listdir(chartsDir):
         if file.endswith(".tgz"):
             tgzPath = os.path.join(chartsDir, file)
-            subchartDir = os.path.join(chartsDir, os.path.splitext(file)[0])
+            subchartName = os.path.splitext(file)[0]  # Get the subchart name without version
+            subchartDir = os.path.join(chartsDir, subchartName)  # Directory where we will extract the subchart
+
             try:
                 with tarfile.open(tgzPath, "r:gz") as tar:
+                    # Ensure the subchart is extracted to the directory with the correct name
                     tar.extractall(path=subchartDir)
                     logging.info(f"Extracted {tgzPath} to {subchartDir}.")
+                    
                     if os.path.exists(subchartDir):
                         logging.info(f"Subchart directory contents before extraction: {os.listdir(subchartDir)}")
                 dependencies.append(subchartDir)
@@ -232,6 +236,7 @@ def extractDependencies(chartPath):
 
     logging.info(f"Extracted {len(dependencies)} dependencies in {chartPath}.")
     return dependencies
+
 
 # Copy chart-templates to a new helmchart directory
 def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
