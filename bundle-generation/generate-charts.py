@@ -200,9 +200,9 @@ def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
     if os.path.exists(specificValues):
         shutil.copyfile(specificValues, os.path.join(chartPath, "values.yaml"))
 
-    helmDependencyOutput = subprocess.getoutput(['helm dependency build '+ chartPath])
-    logging.info(f"helm dependency build {helmDependencyOutput}")
-    helmTemplateOutput = subprocess.getoutput(['helm template '+ chartPath])
+    # helmDependencyOutput = subprocess.getoutput(['helm dependency build '+ chartPath])
+    # logging.info(f"helm dependency build {helmDependencyOutput}")
+    helmTemplateOutput = subprocess.getoutput(['helm template '+ chartPath + ' --skip-deps'])
     logging.info(f"helm template {helmTemplateOutput}")
     yamlList = helmTemplateOutput.split('---')
     logging.info(f"yamlList {yamlList}")
