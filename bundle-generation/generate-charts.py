@@ -185,27 +185,27 @@ def hasDependencies(chartYamlPath):
     logging.info(f"Found {len(dependencies)} dependencies in {chartYamlPath}.")
     return len(dependencies) > 0
 
-def processSubchart(destinationChartPath, subchartPath):
-    """Recursive processing for subcharts."""
-    logging.info(f"Processing subchart: {subchartPath}")
-    try:
-        # List all files and directories in subchartPath
-        if os.path.exists(subchartPath):
-            logging.info(f"Contents of {subchartPath}:")
-            for root, dirs, files in os.walk(subchartPath):
-                for file in files:
-                    logging.info(f"File found: {os.path.join(root, file)}")
-                for dir in dirs:
-                    logging.info(f"Directory found: {os.path.join(root, dir)}")
-        else:
-            logging.error(f"Subchart path does not exist: {subchartPath}")
+# def processSubchart(destinationChartPath, subchartPath):
+#     """Recursive processing for subcharts."""
+#     logging.info(f"Processing subchart: {subchartPath}")
+#     try:
+#         # List all files and directories in subchartPath
+#         if os.path.exists(subchartPath):
+#             logging.info(f"Contents of {subchartPath}:")
+#             for root, dirs, files in os.walk(subchartPath):
+#                 for file in files:
+#                     logging.info(f"File found: {os.path.join(root, file)}")
+#                 for dir in dirs:
+#                     logging.info(f"Directory found: {os.path.join(root, dir)}")
+#         else:
+#             logging.error(f"Subchart path does not exist: {subchartPath}")
         
-        # Process the subchart (here you can add your specific logic)
-        # Example: copyHelmChart(destinationChartPath, "", {"name": os.path.basename(subchartPath), "chart-path": subchartPath}, "")
+#         # Process the subchart (here you can add your specific logic)
+#         # Example: copyHelmChart(destinationChartPath, "", {"name": os.path.basename(subchartPath), "chart-path": subchartPath}, "")
         
-        logging.info(f"Successfully processed subchart: {subchartPath}")
-    except Exception as e:
-        logging.error(f"Error processing subchart {subchartPath}: {e}")
+#         logging.info(f"Successfully processed subchart: {subchartPath}")
+#     except Exception as e:
+#         logging.error(f"Error processing subchart {subchartPath}: {e}")
 
 def extractDependencies(chartPath):
     """Extract dependencies (subcharts) from the charts/ directory."""
@@ -280,7 +280,8 @@ def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
         # Check and process dependencies
         dependencies = extractDependencies(chartPath)
         for dependency in dependencies:
-            processSubchart(destinationChartPath, dependency)
+            logging.info(f"dependency {dependency}")
+            # processSubchart(destinationChartPath, dependency)
     else:
         logging.info(f"No dependencies found for chart: {chartName}")
 
