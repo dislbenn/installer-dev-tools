@@ -219,31 +219,24 @@ def extractDependencies(chartPath):
     for file in os.listdir(chartsDir):
         if file.endswith(".tgz"):
             tgzPath = os.path.join(chartsDir, file)
-            subchartDir = os.path.join(chartsDir, os.path.splitext(file)[0])  # Directory where we will extract the subchart
+            subchartDir = chartsDir  # Use the same chartsDir as the target directory for extraction
 
             try:
-                # If the subchart directory already exists, remove it
-                if os.path.exists(subchartDir):
-                    shutil.rmtree(subchartDir)
-                    logging.info(f"Removed existing directory: {subchartDir}")
-                
                 # Open the tar.gz file
                 with tarfile.open(tgzPath, "r:gz") as tar:
-                    # Extract the contents of the tar.gz file
-                    tar.extractall(path=subchartDir)
-                    logging.info(f"Extracted {tgzPath} to {subchartDir}.")
+                    # Extract all members in the tgz file to the target directory
+                    for member in tar.getmembers():
+                        # Ensure files are extracted directly into the chartsDir, not in any subfolder inside the tgz
+                        member.name = os.path.basename(member.name)  # Strip out the folder structure from the tarball
+                        tar.extract(member, path=subchartDir)
+                    logging.info(f"Extracted {tgzPath} contents directly into {subchartDir}.")
 
-                    # Ensure that the extraction was successful and log the directory contents
-                    if os.path.exists(subchartDir):
-                        logging.info(f"Subchart directory contents after extraction: {os.listdir(subchartDir)}")
-                
                 dependencies.append(subchartDir)
             except Exception as e:
                 logging.error(f"Failed to extract {tgzPath}: {e}")
 
     logging.info(f"Extracted {len(dependencies)} dependencies in {chartPath}.")
     return dependencies
-
 
 
 # Copy chart-templates to a new helmchart directory
