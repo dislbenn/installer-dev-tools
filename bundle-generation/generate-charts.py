@@ -219,14 +219,18 @@ def extractDependencies(chartPath):
     for file in os.listdir(chartsDir):
         if file.endswith(".tgz"):
             tgzPath = os.path.join(chartsDir, file)
-            subchartDir = chartsDir  # Use the same chartsDir as the target directory for extraction
+            subchartName = os.path.splitext(file)[0]  # Get the subchart name without version
+            subchartDir = os.path.join(chartsDir, subchartName)  # Directory where we will extract the subchart
 
+            # Ensure the subchart directory exists
+            if not os.path.exists(subchartDir):
+                os.makedirs(subchartDir)
+            
             try:
-                # Open the tar.gz file
                 with tarfile.open(tgzPath, "r:gz") as tar:
-                    # Extract all members in the tgz file to the target directory
+                    # Extract all members in the tgz file to the target subchartDir
                     for member in tar.getmembers():
-                        # Ensure files are extracted directly into the chartsDir, not in any subfolder inside the tgz
+                        # Ensure files are extracted directly into the subchartDir (flightctl-ui)
                         member.name = os.path.basename(member.name)  # Strip out the folder structure from the tarball
                         tar.extract(member, path=subchartDir)
                     logging.info(f"Extracted {tgzPath} contents directly into {subchartDir}.")
