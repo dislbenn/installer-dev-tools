@@ -220,6 +220,9 @@ def extractDependencies(chartPath):
 
 # Copy chart-templates to a new helmchart directory
 def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
+    current_directory = os.getcwd()
+    logging.info(f"The current directory is: {current_directory}")
+    
     chartName = chart['name']
     logging.info("Copying templates into new '%s' chart directory ...", chartName)
     # Create main folder
