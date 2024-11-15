@@ -256,6 +256,11 @@ def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
     else:
         logging.info(f"No dependencies found for chart: {chartName}")
 
+
+    logging.info(f"2 destinationChartPath: {destinationChartPath}")
+    logging.info(f"2 destinationTemplateDir: {destinationTemplateDir}")
+    logging.info(f"2 chartYamlPath {chartYamlPath}")
+
     # Update chart version if specified before rendering templates
     if chartVersion != "":
         with open(chartYamlPath, 'r') as f:
