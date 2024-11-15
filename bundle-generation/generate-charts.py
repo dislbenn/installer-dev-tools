@@ -890,8 +890,8 @@ def main():
             logging.info("Templating helm chart '%s' ...", chart["name"])
             copyHelmChart(destinationChartPath, repo["repo_name"], chart, chartVersion)
 
-            # Render the helm chart before updating the chart resources.
-            renderChart(destinationChartPath)
+            # # Render the helm chart before updating the chart resources.
+            # renderChart(destinationChartPath)
             
             # Update the helm chart resources with additional overrides
             updateResources(destination, repo["repo_name"], chart)
