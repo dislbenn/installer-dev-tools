@@ -292,7 +292,7 @@ def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
             
     logging.info(f"2 chartVersion {chartVersion}")
 
-    specificValues = os.path.join(os.path.dirname(os.path.realpath(__file__)), "chart-values", chart['name'], "values.dev.yaml")
+    specificValues = os.path.join(os.path.dirname(os.path.realpath(__file__)), "chart-values", chart['name'], "values.yaml")
     if os.path.exists(specificValues):
         shutil.copyfile(specificValues, os.path.join(chartPath, "values.yaml"))
         
