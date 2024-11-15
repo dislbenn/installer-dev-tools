@@ -292,13 +292,13 @@ def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
             
     logging.info(f"2 chartVersion {chartVersion}")
 
-    specificValues = os.path.join(os.path.dirname(os.path.realpath(__file__)), "chart-values", chart['name'], "values.yaml")
+    specificValues = os.path.join(os.path.dirname(os.path.realpath(__file__)), "chart-values", chart['name'], "values.dev.yaml")
     if os.path.exists(specificValues):
         shutil.copyfile(specificValues, os.path.join(chartPath, "values.yaml"))
         
     logging.info(f"specificValues {specificValues}")
 
-    helmTemplateOutput = subprocess.getoutput(['helm template '+ chartPath + '-f values.dev.yaml' + ' --debug'])
+    helmTemplateOutput = subprocess.getoutput(['helm template '+ chartPath + ' --debug'])
     logging.info(f"helm template {helmTemplateOutput}")
 
     yamlList = helmTemplateOutput.split('---')
