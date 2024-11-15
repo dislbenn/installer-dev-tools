@@ -173,23 +173,33 @@ def updateResources(outputDir, repo, chart):
 
 def hasDependencies(chartYamlPath):
     """Check if the Chart.yaml file specifies dependencies."""
+    logging.info(f"Checking for dependencies in {chartYamlPath}...")
     if not os.path.exists(chartYamlPath):
+        logging.warning(f"Chart.yaml not found at {chartYamlPath}.")
         return False
 
     with open(chartYamlPath, 'r') as f:
         chartYaml = yaml.safe_load(f)
 
     dependencies = chartYaml.get('dependencies', [])
+    logging.info(f"Found {len(dependencies)} dependencies in {chartYamlPath}.")
     return len(dependencies) > 0
 
 def processSubchart(destinationChartPath, subchartPath):
-    # Recursive processing for subcharts
+    """Recursive processing for subcharts."""
     logging.info(f"Processing subchart: {subchartPath}")
-    copyHelmChart(destinationChartPath, "", {"name": os.path.basename(subchartPath), "chart-path": subchartPath}, "")
+    try:
+        copyHelmChart(destinationChartPath, "", {"name": os.path.basename(subchartPath), "chart-path": subchartPath}, "")
+        logging.info(f"Successfully processed subchart: {subchartPath}")
+    except Exception as e:
+        logging.error(f"Error processing subchart {subchartPath}: {e}")
 
 def extractDependencies(chartPath):
+    """Extract dependencies (subcharts) from the charts/ directory."""
+    logging.info(f"Checking for dependencies in {chartPath}...")
     chartsDir = os.path.join(chartPath, "charts")
     if not os.path.exists(chartsDir):
+        logging.warning(f"No charts/ directory found in {chartPath}.")
         return []
 
     dependencies = []
@@ -197,11 +207,15 @@ def extractDependencies(chartPath):
         if file.endswith(".tgz"):
             tgzPath = os.path.join(chartsDir, file)
             subchartDir = os.path.join(chartsDir, os.path.splitext(file)[0])
-            with tarfile.open(tgzPath, "r:gz") as tar:
-                tar.extractall(path=subchartDir)
-                logging.info(f"Extracted {tgzPath} to {subchartDir}")
-            dependencies.append(subchartDir)
+            try:
+                with tarfile.open(tgzPath, "r:gz") as tar:
+                    tar.extractall(path=subchartDir)
+                    logging.info(f"Extracted {tgzPath} to {subchartDir}.")
+                dependencies.append(subchartDir)
+            except Exception as e:
+                logging.error(f"Failed to extract {tgzPath}: {e}")
 
+    logging.info(f"Found {len(dependencies)} dependencies in {chartPath}.")
     return dependencies
 
 # Copy chart-templates to a new helmchart directory
