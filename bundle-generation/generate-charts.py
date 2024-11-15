@@ -273,8 +273,7 @@ def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
         # Check and process dependencies
         dependencies = extractDependencies(chartPath)
         for dependency in dependencies:
-            logging.info(f"dependency {dependency}")
-            # processSubchart(destinationChartPath, dependency)
+            processSubchart(destinationChartPath, dependency)
     else:
         logging.info(f"No dependencies found for chart: {chartName}")
 
