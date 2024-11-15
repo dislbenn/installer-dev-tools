@@ -257,6 +257,7 @@ def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
         logging.info(f"No dependencies found for chart: {chartName}")
 
 
+    logging.info(f"2 chartPath: {chartPath}")
     logging.info(f"2 destinationChartPath: {destinationChartPath}")
     logging.info(f"2 destinationTemplateDir: {destinationTemplateDir}")
     logging.info(f"2 chartYamlPath {chartYamlPath}")
