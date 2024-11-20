@@ -707,12 +707,12 @@ def renderChart(chart_path):
     try:
         # Use the Helm command to render the chart
         logging.info("Rendering chart '%s'...", chart_path)
-        subprocess.run(
-            ['helm', 'template', chart_path, '-f', values_file_path],
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
-        )
+        helmTemplateOutput = subprocess.getoutput(['helm template '+ values_file_path])
+        # subprocess.run(['helm', 'template', chart_path, '-f', values_file_path],
+        #     check=True,
+        #     stdout=subprocess.PIPE,
+        #     stderr=subprocess.PIPE
+        # )
         logging.info("Chart rendered successfully.")
         return True
 
