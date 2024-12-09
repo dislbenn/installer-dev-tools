@@ -149,8 +149,6 @@ def updateResources(outputDir, repo, chart):
     # Track progress, error count, and failed files
     error_count = 0
     failed_files = []
-    processed_files = 0
-    total_files = len(os.listdir(templateDir))
 
     # Process each file in the template directory
     for tempFile in os.listdir(templateDir):
@@ -189,7 +187,7 @@ def updateResources(outputDir, repo, chart):
                 logging.info(f"Updating ClusterRoleBinding in {filePath}")
                 updateClusterRoleBinding(yamlContent)
             else:
-                logging.info(f"Skipping ClusterRoleBinding update (RBAC override is disabled) in {filePath}")
+                logging.warning(f"Skipping ClusterRoleBinding update (RBAC override is disabled) in {filePath}")
 
         else:
             logging.warning(f"Skipping unsupported kind '{kind}' in {filePath}. No updates applied")
@@ -205,10 +203,6 @@ def updateResources(outputDir, repo, chart):
             failed_files.append(filePath)
             error_count += 1
             continue # Skip this file and move to the next
-
-        # Log progress after every file processed
-        processed_files += 1
-        logging.debug(f"Processed {processed_files}/{total_files} files.")
 
     try:
         # Escape template variables
@@ -333,10 +327,22 @@ def fixEnvVarImageReferences(helmChart, imageKeyMapping):
 # If the image-key referenced in the deployment does not exist in `imageMappings` in the Config.yaml, this will fail. Images must be explicitly defined
 def fixImageReferences(helmChart, imageKeyMapping):
     logging.info("Fixing image and pull policy references in deployments and values.yaml ...")
+
+    # Path to the values.yaml file
     valuesYaml = os.path.join(helmChart, "values.yaml")
-    with open(valuesYaml, 'r') as f:
-        values = yaml.safe_load(f)
-    
+
+    # Check if the values.yaml file exists
+    if not os.path.exists(valuesYaml):
+        logging.error(f"{valuesYaml} does not exist. Skipping image and pull policy updates.")
+        return  # Exit the function if the file doesn't exist
+
+    try:
+        with open(valuesYaml, 'r') as f:
+            values = yaml.safe_load(f)
+    except Exception as e:
+        logging.error(f"Error readhing {valuesYaml}: {e}")
+        return # Exit the function if reading the file fails
+
     deployments = findTemplatesOfType(helmChart, 'Deployment')
     imageKeys = []
     temp = "" ## temporarily read image ref
