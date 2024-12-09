@@ -287,7 +287,15 @@ def findTemplatesOfType(helmChart, kind):
 # If the image-key referenced in the deployment does not exist in `imageMappings` in the Config.yaml, this will fail. Images must be explicitly defined
 def fixEnvVarImageReferences(helmChart, imageKeyMapping):
     logging.info("Fixing image references in container 'env' section in deployments and values.yaml ...")
+
+    # Path to the values.yaml file
     valuesYaml = os.path.join(helmChart, "values.yaml")
+
+    # Check if the values.yaml file exists
+    if not os.path.exists(valuesYaml):
+        logging.error(f"{valuesYaml} does not exist. Skipping environment variable image reference updates.")
+        return  # Exit the function if the file doesn't exist
+
     with open(valuesYaml, 'r') as f:
         values = yaml.safe_load(f)
     deployments = findTemplatesOfType(helmChart, 'Deployment')
@@ -638,7 +646,15 @@ def fixImageReferencesForAddonTemplate(helmChart, imageKeyMapping):
 
     if len(imageKeys) == 0:
         return
+
+    # Path to the values.yaml file
     valuesYaml = os.path.join(helmChart, "values.yaml")
+
+    # Check if the values.yaml file exists
+    if not os.path.exists(valuesYaml):
+        logging.error(f"{valuesYaml} does not exist. Skipping image reference updates for addon templates.")
+        return  # Exit the function if the file doesn't exist
+
     with open(valuesYaml, 'r') as f:
         values = yaml.safe_load(f)
     if 'imageOverride' in values['global']['imageOverrides']:
