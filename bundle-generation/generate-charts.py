@@ -699,25 +699,34 @@ def getChartVersion(updateChartVersion, repo):
 def renderChart(chart_path):
     # Define the path for the values.yaml file
     values_file_path = os.path.join(chart_path, 'values.yaml')
-    
-    # Load the values from the values.yaml file
-    with open(values_file_path, 'r') as f:
-        values = yaml.safe_load(f)
 
     try:
-        # Use the Helm command to render the chart
+        # Load the values from the values.yaml file
+        with open(values_file_path, 'r') as f:
+            values = yaml.safe_load(f)
+
+        # Check if Helm is installed by running a version command
+        subprocess.run(['helm', 'version'], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        # Try to render the chart using Helm
         logging.info("Rendering chart '%s'...", chart_path)
-        subprocess.run(
+        result = subprocess.run(
             ['helm', 'template', chart_path, '-f', values_file_path],
             check=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE
         )
+
         logging.info("Chart rendered successfully.")
+        logging.info("Helm output:\n%s", result.stdout.decode())
         return True
 
-    except subprocess.CalledProcessError as e:
-        logging.error("Error rendering chart: %s", e.stderr.decode())
+    except (FileNotFoundError, PermissionError, yaml.YAMLError, subprocess.CalledProcessError) as e:
+        logging.error(f"Error: {str(e)}")
+        return False
+
+    except Exception as e:
+        logging.error("An unexpected error occurred: %s", str(e))
         return False
 
 def main():
