@@ -144,11 +144,13 @@ def updateResources(outputDir, repo, chart):
     # Check if template directory exists
     if not os.path.exists(templateDir):
         logging.error(f"Template directory {templateDir} does not exist. Exiting update process.")
-        return
+        return # Exit early if the template directory doesn't exist
 
-    # Track progress
-    total_files = len(os.listdir(templateDir))
+    # Track progress, error count, and failed files
+    error_count = 0
+    failed_files = []
     processed_files = 0
+    total_files = len(os.listdir(templateDir))
 
     # Process each file in the template directory
     for tempFile in os.listdir(templateDir):
@@ -157,15 +159,15 @@ def updateResources(outputDir, repo, chart):
         try:
             with open(filePath, 'r') as f:
                 yamlContent = yaml.safe_load(f)
-
         except Exception as e:
             logging.error(f"Error reading YAML content from {filePath}: {e}")
-            return
+            failed_files.append(filePath)
+            error_count += 1
+            continue # Skip this file and move onto the next one
 
+        # Log the kind of resource being processed   
         kind = yamlContent.get("kind")
-
-        # Log the kind of resource being processed
-        logging.info(f"Processing resource of kind: {kind} in {filePath}")
+        logging.info(f"Found resource of kind: {kind} in {filePath}")
 
         # Perform the appropriate update action based on the kind
         if kind == "AddOnDeploymentConfig":
@@ -190,32 +192,35 @@ def updateResources(outputDir, repo, chart):
                 logging.info(f"Skipping ClusterRoleBinding update (RBAC override is disabled) in {filePath}")
 
         else:
-            logging.info(f"Skipping unsupported kind '{kind}' in {filePath}. No updates applied")
-            continue
+            logging.warning(f"Skipping unsupported kind '{kind}' in {filePath}. No updates applied")
+            continue # Skip unsupported kinds
 
+        # Try writing updated content to the file
         try:
             with open(filePath, 'w') as f:
                 yaml.dump(yamlContent, f, width=float("inf"))
-            logging.info(f"Successfully updated resource kind '{kind}' in {filePath}")
-
+            logging.info(f"Successfully updated {filePath}")
         except Exception as e:
             logging.error(f"Error writing YAML content to {filePath}: {e}")
+            failed_files.append(filePath)
+            error_count += 1
             continue # Skip this file and move to the next
 
-        processed_files += 1
-
         # Log progress after every file processed
+        processed_files += 1
         logging.debug(f"Processed {processed_files}/{total_files} files.")
 
     try:
         # Escape template variables
         escapeTemplateVariables(chartDir, chart["escape-template-variables"])
         logging.info(f"Template variables escaped successfully for {chartDir}.")
-
     except Exception as e:
         logging.error(f"Error escaping template variables in {chartDir}: {e}")
 
-    logging.info("Resource update process completed.")
+    if error_count > 0:
+        logging.warning(f"Resource update process completed with {error_count} errors. Failed files: {', '.join(failed_files)}.")
+    else:
+        logging.info("All resources updated successfully.")
 
 
 # Copy chart-templates to a new helmchart directory
