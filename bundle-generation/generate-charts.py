@@ -130,7 +130,7 @@ def escapeTemplateVariables(helmChart, variables):
             a_file = open(addonTemplate, "w")
             a_file.writelines(lines)
             a_file.close()
-    logging.info("Escaped template variables.\n")
+    logging.info("Escaped template variables.")
 
 # Copy chart-templates to a new helmchart directory
 def updateResources(outputDir, repo, chart):
@@ -883,7 +883,7 @@ def main():
                 exclusions = chart["exclusions"] if "exclusions" in chart else []
                 inclusions = chart["inclusions"] if "inclusions" in chart else []
                 injectRequirements(destinationChartPath, chart["name"], chart["imageMappings"], chart["skipRBACOverrides"], exclusions, inclusions, branch)
-                logging.info("Overrides added. \n")
+                logging.info("Overrides added.\n")
 
     logging.info("All repositories and operators processed successfully.")
     logging.info("Performing cleanup...")
