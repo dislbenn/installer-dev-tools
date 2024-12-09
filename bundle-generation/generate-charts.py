@@ -134,39 +134,71 @@ def escapeTemplateVariables(helmChart, variables):
 
 # Copy chart-templates to a new helmchart directory
 def updateResources(outputDir, repo, chart):
-    logging.info(" Updating resources!")
+    logging.info("Starting resource update process...")
+
     # Create main folder
     always_or_toggle = chart['always-or-toggle']
     chartDir = os.path.join(outputDir, "charts", always_or_toggle, chart['name'])
     templateDir = os.path.join(chartDir, "templates")
-    print(templateDir)
+
+    # Check if template directory exists
+    if not os.path.exists(templateDir):
+        logging.error(f"Template directory {templateDir} does not exist. Exiting update process.")
+
+    # Track progress
+    total_files = len(os.listdir(templateDir))
+    processed_files = 0
+
     for tempFile in os.listdir(templateDir):
         filePath = os.path.join(templateDir, tempFile)
         with open(filePath, 'r') as f:
             yamlContent = yaml.safe_load(f)
+
         kind = yamlContent["kind"]
         if kind == "AddOnDeploymentConfig":
-            logging.info(" Updating AddOnDeploymentConfig!")
+            logging.info("Updating AddOnDeploymentConfig!")
             updateAddOnDeploymentConfig(yamlContent)
+
         elif kind == "ClusterManagementAddOn":
-            logging.info(" Updating ClusterManagementAddOn!")
+            logging.info("Updating ClusterManagementAddOn!")
             updateClusterManagementAddOn(yamlContent)
             if chart['auto-install-for-all-clusters']:
                 installAddonForAllClusters(yamlContent)
+
         elif kind == "ServiceAccount":
-            logging.info(" Updating ServiceAccount!")
+            logging.info("Updating ServiceAccount!")
             updateServiceAccount(yamlContent)
+
         elif kind == "ClusterRoleBinding":
             if not chart['skipRBACOverrides']:
-                logging.info(" Updating ClusterRoleBinding!")
+                logging.info("Updating ClusterRoleBinding!")
                 updateClusterRoleBinding(yamlContent)
         else:
-            logging.info(" No updates for kind %s at this step.", kind)
+            logging.info("No updates for kind %s at this step.", kind)
             continue
-        with open(filePath, 'w') as f:
-            yaml.dump(yamlContent, f, width=float("inf"))
-    # Escape template variables
-    escapeTemplateVariables(chartDir, chart["escape-template-variables"])
+
+        try:
+            with open(filePath, 'w') as f:
+                yaml.dump(yamlContent, f, width=float("inf"))
+
+        except Exception as e:
+            logging.error(f"Error writing YAML content to {filePath}: {e}")
+            continue # Skip this file and move to the next
+
+        processed_files += 1
+
+        # Log progress after every file processed
+        logging.debug(f"Processed {processed_files}/{total_files} files.")
+
+    try:
+        # Escape template variables
+        escapeTemplateVariables(chartDir, chart["escape-template-variables"])
+        logging.info(f"Template variables escaped successfully for {chartDir}.")
+
+    except Exception as e:
+        logging.error(f"Error escaping template variables in {chartDir}: {e}")
+
+    logging.info("Resource update process completed.")
 
 
 # Copy chart-templates to a new helmchart directory
