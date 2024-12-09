@@ -796,8 +796,9 @@ def main():
             copyHelmChart(destinationChartPath, repo["repo_name"], chart, chartVersion)
 
             # Render the helm chart before updating the chart resources.
-            renderChart(destinationChartPath)
-            
+            if not renderChart(destinationChartPath):
+                logging.error(f"Failed to render chart {destinationChartPath}")
+
             # Update the helm chart resources with additional overrides
             updateResources(destination, repo["repo_name"], chart)
 
