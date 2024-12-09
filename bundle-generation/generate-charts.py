@@ -185,7 +185,7 @@ def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
 
     chartYamlPath = os.path.join(chartPath, "Chart.yaml")
     if not os.path.exists(chartYamlPath):
-        logging.info("No Chart.yaml for chart: ", chartName)
+        logging.error(f"No Chart.yaml for chart: {chartName}")
         return
 
     # Update chart version if specified before rendering templates
