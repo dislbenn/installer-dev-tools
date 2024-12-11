@@ -202,9 +202,8 @@ def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
     helmTemplateOutput = subprocess.getoutput(['helm template '+ chartPath])
     yamlList = helmTemplateOutput.split('---')
 
+    logging.info("Processing new YAML content:")
     for outputContent in yamlList:
-        logging.info("Processing new YAML content.")
-    
         yamlContent = yaml.safe_load(outputContent)
         if yamlContent is None:
             logging.warning("Skipped empty or invalid YAML content.")
