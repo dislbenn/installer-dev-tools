@@ -4,6 +4,7 @@
 # Assumes: Python 3.6+
 
 import argparse
+import tempfile
 import os
 import shutil
 import yaml
@@ -721,51 +722,66 @@ def split_at(the_str, the_delim, favor_right=True):
 def addCRDs(repo, chart, outputDir):
     if 'chart-path' not in chart:
         logging.critical(f"Chart path missing in the provided chart configuration: {chart}")
-        exit(1) 
+        exit(1)
 
     chartPath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "tmp", repo, chart["chart-path"])
     if not os.path.exists(chartPath):
         logging.critical(f"Chart path not found at: {chartPath}")
         exit(1)
 
-    crdPath = os.path.join(chartPath, "crds")
-    if not os.path.exists(crdPath):
-        logging.info(f"No CRDs for repo: {repo}")
-        return
-    
-    destinationPath = os.path.join(outputDir, "crds", chart.get('name', ''))
-    if os.path.exists(destinationPath): # If path exists, remove and re-clone
-        logging.warning(f"Destination CRDs path already exists. Removing: {destinationPath}")
-        shutil.rmtree(destinationPath)
+    # Use a temporary directory to render the Helm templates
+    with tempfile.TemporaryDirectory() as temp_dir:
+        # Run Helm to render the chart templates into the temp directory
+        command = [
+            "helm", "template", chart["name"], chartPath,
+            "--output-dir", temp_dir
+        ]
+        try:
+            subprocess.run(command, check=True)
+            logging.info(f"Helm template rendered successfully to: {temp_dir}")
+        except subprocess.CalledProcessError as e:
+            logging.error(f"Error rendering Helm templates: {e}")
+            return
+        
+        # Now that the templates are rendered, look for CRDs
+        crdPath = os.path.join(temp_dir, chart["name"], "crds")
+        if not os.path.exists(crdPath):
+            logging.info(f"No CRDs found in the rendered Helm chart for repo: {repo}")
+            return
 
-    logging.info(f"Created destination path for CRDs: {destinationPath}")
-    os.makedirs(destinationPath)
+        destinationPath = os.path.join(outputDir, "crds", chart.get('name', ''))
+        if os.path.exists(destinationPath):  # If path exists, remove and re-clone
+            logging.warning(f"Destination CRDs path already exists. Removing: {destinationPath}")
+            shutil.rmtree(destinationPath)
 
-    for filename in os.listdir(crdPath):
-        filepath = os.path.join(crdPath, filename)
+        logging.info(f"Created destination path for CRDs: {destinationPath}")
+        os.makedirs(destinationPath)
 
-        if not filename.endswith(".yaml"): 
-            logging.debug(f"Skipping non-YAML file: {filename}")
-            continue
+        for filename in os.listdir(crdPath):
+            filepath = os.path.join(crdPath, filename)
 
-        logging.info(f"Processing file: {filepath}")
-        try:            
-            with open(filepath, 'r') as f:
-                resourceFile = yaml.safe_load(f)
+            if not filename.endswith(".yaml"):
+                logging.debug(f"Skipping non-YAML file: {filename}")
+                continue
 
-            if resourceFile["kind"] == "CustomResourceDefinition":
-                logging.info(f"Found CRD resource in file: {filename}")
-                targetPath = os.path.join(destinationPath, filename)
-                shutil.copyfile(filepath, targetPath)
-                logging.info(f"Copied CRD file to: {targetPath}")
-            else:
-                logging.debug(f"File {filename} does not contain a CRD. Skipping.")
-        except yaml.YAMLError as e:
-            logging.error(f"Error parsing YAML in file {filepath}: {e}")
-        except Exception as e:
-            logging.error(f"Unexpected error while processing file {filepath}: {e}")
+            logging.info(f"Processing file: {filepath}")
+            try:
+                with open(filepath, 'r') as f:
+                    resourceFile = yaml.safe_load(f)
 
-    logging.info(f"CRD processing completed for chart '{chart['name']}' at {destinationPath}")
+                if resourceFile["kind"] == "CustomResourceDefinition":
+                    logging.info(f"Found CRD resource in file: {filename}")
+                    targetPath = os.path.join(destinationPath, filename)
+                    shutil.copyfile(filepath, targetPath)
+                    logging.info(f"Copied CRD file to: {targetPath}")
+                else:
+                    logging.debug(f"File {filename} does not contain a CRD. Skipping.")
+            except yaml.YAMLError as e:
+                logging.error(f"Error parsing YAML in file {filepath}: {e}")
+            except Exception as e:
+                logging.error(f"Unexpected error while processing file {filepath}: {e}")
+
+        logging.info(f"CRD processing completed for chart '{chart['name']}' at {destinationPath}")
 
 def chartConfigAcceptable(chart):
     helmChart = chart["name"]
