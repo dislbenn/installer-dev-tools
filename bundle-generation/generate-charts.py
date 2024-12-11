@@ -203,24 +203,31 @@ def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
     yamlList = helmTemplateOutput.split('---')
 
     for outputContent in yamlList:
+        logging.info("Processing new YAML content.")
+    
         yamlContent = yaml.safe_load(outputContent)
         if yamlContent is None:
+            logging.warning("Skipped empty or invalid YAML content.")
             continue
 
         name = yamlContent.get('metadata', {}).get('name', '').lower()
         kind = yamlContent.get('kind', '').lower()
+        logging.debug(f"Extracted name: '{name}', kind: '{kind}'.")
 
         yamlFileName = f"{name}-{kind}" if name else kind
-
         newFileName = yamlFileName + '.yaml'
         newFilePath= os.path.join(destinationTemplateDir, newFileName)
-        a_file = open(newFilePath, "w")
-        a_file.writelines(outputContent)
-        a_file.close()
+        logging.info(f"Generated file name: '{newFileName}'.")
+        
+        try:
+            with open(newFilePath, "w") as f:
+                f.writelines(outputContent)
+        except Exception as e:
+            logging.error(f"Failed to write file '{newFilePath}': {e}")
 
     shutil.copyfile(chartYamlPath, os.path.join(destinationChartPath, "Chart.yaml"))
-
     shutil.copyfile(os.path.join(chartPath, "values.yaml"), os.path.join(destinationChartPath, "values.yaml"))
+
     # Copying template values.yaml instead of values.yaml from chart
     shutil.copyfile(os.path.join(os.path.dirname(os.path.realpath(__file__)), "chart-templates", "values.yaml"), os.path.join(destinationChartPath, "values.yaml"))
 
