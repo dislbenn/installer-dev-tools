@@ -139,7 +139,7 @@ def updateResources(outputDir, repo, chart):
     always_or_toggle = chart['always-or-toggle']
     chartDir = os.path.join(outputDir, "charts", always_or_toggle, chart['name'])
     templateDir = os.path.join(chartDir, "templates")
-    print(templateDir)
+
     for tempFile in os.listdir(templateDir):
         filePath = os.path.join(templateDir, tempFile)
         with open(filePath, 'r') as f:
