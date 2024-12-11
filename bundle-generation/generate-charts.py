@@ -743,6 +743,7 @@ def addCRDs(repo, chart, outputDir):
 
     try:
         result = subprocess.run(helm_command, check=True, capture_output=True, text=True)
+        logging.info(f"results {result}")
     except subprocess.CalledProcessError as e:
         logging.critical(f"Error running helm template: {e.stderr}")
         exit(1)
