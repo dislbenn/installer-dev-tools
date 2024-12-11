@@ -675,8 +675,6 @@ def addCRDs(repo, chart, outputDir):
 
         filepath = os.path.join(crdPath, filename)
         with open(filepath, 'r') as f:
-            logging.info(f"filepath {filepath}")
-
             resourceFile = yaml.safe_load(f)
 
         if resourceFile["kind"] == "CustomResourceDefinition":
