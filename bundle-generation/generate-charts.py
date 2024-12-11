@@ -868,10 +868,10 @@ def main():
                 logging.critical("Unable to generate helm chart without configuration requirements.")
                 exit(1)
 
-            logging.info("Helm Chartifying -  %s!\n", chart["name"])
+            logging.info("Helm Chartifying - %s", chart["name"])
 
-            logging.info("Adding CRDs -  %s!\n", chart["name"])
             # Copy over all CRDs to the destination directory
+            logging.info("Adding CRDs - %s", chart["name"])
             addCRDs(repo["repo_name"], chart, destination)
 
             logging.info("Creating helm chart: '%s' ...", chart["name"])
