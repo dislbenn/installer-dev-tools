@@ -720,59 +720,39 @@ def split_at(the_str, the_delim, favor_right=True):
    return (left_part, right_part)
 
 def addCRDs(repo, chart, outputDir):
-    if 'chart-path' not in chart:
+    if not 'chart-path' in chart:
         logging.critical(f"Chart path missing in the provided chart configuration: {chart}")
-        exit(1)
+        exit(1) 
 
-    # Construct the chart path
     chartPath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "tmp", repo, chart["chart-path"])
     if not os.path.exists(chartPath):
         logging.critical(f"Chart path not found at: {chartPath}")
         exit(1)
+    
+    crdPath = os.path.join(chartPath, "crds")
+    if not os.path.exists(crdPath):
+        logging.info(f"No CRDs for repo: {repo}")
+        return
 
-    # Destination for rendered CRDs
-    destinationPath = os.path.join(outputDir, chart['name'], "crds")
-    if os.path.exists(destinationPath):  # If path exists, remove and recreate
-        logging.warning(f"Destination path already exists. Removing: {destinationPath}")
+    destinationPath = os.path.join(outputDir, "crds", chart['name'])
+    if os.path.exists(destinationPath): # If path exists, remove and re-clone
+        logging.warning(f"Destination CRDs path already exists. Removing: {destinationPath}")
         shutil.rmtree(destinationPath)
+
     os.makedirs(destinationPath)
     logging.info(f"Created destination path for CRDs: {destinationPath}")
 
-    # Iterate over files in the destination directory
-    logging.info(f"Processing files in destination path: {destinationPath}")
-    for filename in os.listdir(destinationPath):
-        filepath = os.path.join(destinationPath, filename)
-
-        if not filename.endswith(".yaml"):
-            logging.debug(f"Skipping non-YAML file: {filename}")
+    for filename in os.listdir(crdPath):
+        if not filename.endswith(".yaml"): 
             continue
+        filepath = os.path.join(crdPath, filename)
+        with open(filepath, 'r') as f:
+            logging.info(f"filepath {filepath}")
 
-        logging.info(f"Processing file: {filepath}")
-        try:
-            with open(filepath, 'r') as f:
-                # Use safe_load_all to handle multiple YAML documents
-                resources = list(yaml.safe_load_all(f))
-                logging.debug(f"Loaded YAML content for {filename}: {resources}")
+            resourceFile = yaml.safe_load(f)
 
-            # Process each document in the YAML file
-            for resourceFile in resources:
-                if resourceFile is None:
-                    continue
-
-                # Check if the file contains a CRD
-                if resourceFile.get("kind") == "CustomResourceDefinition":
-                    logging.info(f"Identified CRD resource in file: {filename}")
-                    targetPath = os.path.join(destinationPath, filename)
-                    shutil.copyfile(filepath, targetPath)
-                    logging.info(f"Copied CRD file to: {targetPath}")
-                else:
-                    logging.debug(f"File {filename} does not contain a CRD. Skipping.")
-        except yaml.YAMLError as e:
-            logging.error(f"Error parsing YAML in file {filepath}: {e}")
-        except Exception as e:
-            logging.error(f"Unexpected error while processing file {filepath}: {e}")
-
-    logging.info(f"CRD processing completed for chart '{chart['name']}' at {destinationPath}")
+        if resourceFile["kind"] == "CustomResourceDefinition":
+            shutil.copyfile(filepath, os.path.join(destinationPath, filename))
 
 
 def chartConfigAcceptable(chart):
