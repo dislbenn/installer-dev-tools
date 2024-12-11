@@ -207,7 +207,7 @@ def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
     for outputContent in yamlList:
         yamlContent = yaml.safe_load(outputContent)
         if yamlContent is None:
-            logging.warning("Skipped empty or invalid YAML content.\n")
+            logging.warning("Skipped empty or invalid YAML content")
             continue
 
         name = yamlContent.get('metadata', {}).get('name', '').lower()
