@@ -179,7 +179,6 @@ def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
         shutil.rmtree(destinationChartPath)
     
     # Copy Chart.yaml, values.yaml, and templates dir
-
     destinationTemplateDir = os.path.join(destinationChartPath, "templates")
     os.makedirs(destinationTemplateDir)
 
@@ -201,14 +200,9 @@ def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
         shutil.copyfile(specificValues, os.path.join(chartPath, "values.yaml"))
 
     helmTemplateOutput = subprocess.getoutput(['helm template '+ chartPath])
-    # logging.info(f"helmTemplateOutput: {helmTemplateOutput}")
-
     yamlList = helmTemplateOutput.split('---')
-    # logging.info(f"yamlList: {yamlList}")
 
     for outputContent in yamlList:
-        logging.info(f"outputContent: {outputContent}")
-        
         yamlContent = yaml.safe_load(outputContent)
         if yamlContent is None:
             continue
@@ -670,8 +664,6 @@ def addCRDs(repo, chart, outputDir):
     if os.path.exists(destinationPath): # If path exists, remove and re-clone
         shutil.rmtree(destinationPath)
     os.makedirs(destinationPath)
-
-    helmTemplateOutput = subprocess.getoutput(['helm template '+ chartPath])
 
     for filename in os.listdir(crdPath):
         if not filename.endswith(".yaml"): 
