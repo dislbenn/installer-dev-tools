@@ -733,7 +733,7 @@ def addCRDs(repo, chart, outputDir):
     with tempfile.TemporaryDirectory() as temp_dir:
         # Run Helm to render the chart templates into the temp directory
         command = [
-            "helm", "template", chart["name"], chartPath,
+            "helm", "template", chart["name"], chartPath, '--include-crds'
             "--output-dir", temp_dir
         ]
         try:
