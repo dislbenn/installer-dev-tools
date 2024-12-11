@@ -740,8 +740,8 @@ def addCRDs(repo, chart, outputDir):
     logging.info(f"Created destination path for CRDs: {destinationPath}")
     os.makedirs(destinationPath)
 
-    for filename in os.listdir(destinationPath):
-        filepath = os.path.join(destinationPath, filename)
+    for filename in os.listdir(crdPath):
+        filepath = os.path.join(crdPath, filename)
 
         if not filename.endswith(".yaml"): 
             logging.debug(f"Skipping non-YAML file: {filename}")
