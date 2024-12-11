@@ -215,11 +215,10 @@ def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
         
         logging.info(f"yamlContent: {yamlContent}")
 
-        yamlFileName = yamlContent.get('metadata', {}).get('name', '')
-        if not yamlFileName:
-            yamlFileName = yamlContent.get('kind', '').lower()
-        else:
-            yamlFileName = yamlFileName.lower()
+        name = yamlContent.get('metadata', {}).get('name', '')
+        kind = yamlContent.get('kind', '')
+
+        yamlFileName = f"{name}-{kind}" if name else kind
 
         newFileName = yamlFileName + '.yaml'
         newFilePath= os.path.join(destinationTemplateDir, newFileName)
