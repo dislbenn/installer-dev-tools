@@ -171,8 +171,9 @@ def updateResources(outputDir, repo, chart):
 
 # Copy chart-templates to a new helmchart directory
 def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
-    chartName = chart['name']
-    logging.info("Copying templates into new '%s' chart directory ...", chartName)
+    chartName = chart.get('name', '')
+    logging.info(f"Copying templates into new '{chartName}' chart directory ...\n")
+
     # Create main folder
     chartPath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "tmp", repo, chart["chart-path"])
     if os.path.exists(destinationChartPath):
