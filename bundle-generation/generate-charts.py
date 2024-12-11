@@ -875,9 +875,13 @@ def main():
 
             if not skipOverrides:
                 logging.info("Adding Overrides (set --skipOverrides=true to skip) ...")
+                name = chart.get("name", "")
+                image_mappings = chart.get("imageMappings", {})
                 exclusions = chart["exclusions"] if "exclusions" in chart else []
                 inclusions = chart["inclusions"] if "inclusions" in chart else []
-                injectRequirements(destinationChartPath, chart["name"], chart["imageMappings"], chart["skipRBACOverrides"], exclusions, inclusions, branch)
+                skip_rbac_overrides = chart.get("skipRBACOverrides", False)
+
+                injectRequirements(destinationChartPath, name, image_mappings, skip_rbac_overrides, exclusions, inclusions, branch)
                 logging.info("Overrides added.\n")
 
     logging.info("All repositories and operators processed successfully.")
