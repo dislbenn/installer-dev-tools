@@ -732,7 +732,7 @@ def addCRDs(repo, chart, outputDir):
         logging.info(f"No CRDs for repo: {repo}")
         return
     
-    destinationPath = os.path.join(outputDir, chart.get('name', ''), "crds")
+    destinationPath = os.path.join(outputDir, "crds", chart.get('name', ''))
     if os.path.exists(destinationPath): # If path exists, remove and re-clone
         logging.warning(f"Destination CRDs path already exists. Removing: {destinationPath}")
         shutil.rmtree(destinationPath)
@@ -751,7 +751,6 @@ def addCRDs(repo, chart, outputDir):
         try:            
             with open(filepath, 'r') as f:
                 resourceFile = yaml.safe_load(f)
-                logging.debug(f"Loaded YAML content for {filename}: {resourceFile}")
 
             if resourceFile["kind"] == "CustomResourceDefinition":
                 logging.info(f"Found CRD resource in file: {filename}")
