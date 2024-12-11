@@ -212,8 +212,10 @@ def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
         yamlContent = yaml.safe_load(outputContent)
         if yamlContent is None:
             continue
+        
+        logging.info(f"yamlContent: {yamlContent}")
 
-        newFileName = yamlContent['name'].lower() + '.yaml'
+        newFileName = yamlContent['kind'].lower() + '.yaml'
         newFilePath= os.path.join(destinationTemplateDir, newFileName)
         a_file = open(newFilePath, "w")
         a_file.writelines(outputContent)
