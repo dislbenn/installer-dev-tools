@@ -695,11 +695,12 @@ def injectRequirements(helmChart, chartName, imageKeyMapping, skipRBACOverrides,
     fixEnvVarImageReferences(helmChart, imageKeyMapping)
     fixImageReferencesForAddonTemplate(helmChart, imageKeyMapping)
     injectAnnotationsForAddonTemplate(helmChart)
+
     if not skipRBACOverrides:
         updateRBAC(helmChart, chartName)
     updateDeployments(chartName, helmChart, exclusions, inclusions, branch)
 
-    logging.info("Updated Chart '%s' successfully\n", helmChart)
+    logging.info("Updated Chart '%s' successfully", helmChart)
 
 def split_at(the_str, the_delim, favor_right=True):
 
