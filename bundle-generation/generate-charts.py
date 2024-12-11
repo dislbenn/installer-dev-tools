@@ -172,20 +172,25 @@ def updateResources(outputDir, repo, chart):
 # Copy chart-templates to a new helmchart directory
 def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
     chartName = chart.get('name', '')
-    logging.info(f"Copying templates into new '{chartName}' chart directory ...\n")
+    logging.info(f"Starting to process chart '{chartName}' chart directory ...")
 
     # Create main folder
     chartPath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "tmp", repo, chart["chart-path"])
+    logging.debug(f"Chart path resolved to: '{chartPath}'")
+    logging.debug(f"Destination chart path: '{destinationChartPath}'")
+
     if os.path.exists(destinationChartPath):
+        logging.warning(f"Destination chart path already exists. Removing: {destinationChartPath}")
         shutil.rmtree(destinationChartPath)
     
     # Copy Chart.yaml, values.yaml, and templates dir
     destinationTemplateDir = os.path.join(destinationChartPath, "templates")
+    logging.info(f"Creating destination template directory: {destinationTemplateDir}")
     os.makedirs(destinationTemplateDir)
 
     chartYamlPath = os.path.join(chartPath, "Chart.yaml")
     if not os.path.exists(chartYamlPath):
-        logging.info("No Chart.yaml for chart: ", chartName)
+        logging.error(f"Missing Chart.yaml in chart: '{chartName}' at path: {chartYamlPath}")
         return
 
     # Update chart version if specified before rendering templates
@@ -198,20 +203,28 @@ def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
 
     specificValues = os.path.join(os.path.dirname(os.path.realpath(__file__)), "chart-values", chart['name'], "values.yaml")
     if os.path.exists(specificValues):
+        logging.info(f"Using specific values.yaml for chart '{chartName}' from: {specificValues}")
         shutil.copyfile(specificValues, os.path.join(chartPath, "values.yaml"))
+    else:
+        logging.warning(f"No specific values.yaml found for chart '{chartName}'")
 
+    logging.info(f"Running 'helm template' for chart: '{chartName}' at path: {chartPath}")
     helmTemplateOutput = subprocess.getoutput(['helm template '+ chartPath])
+
+    logging.debug("Splitting Helm template output into individual YAML")
     yamlList = helmTemplateOutput.split('---')
 
-    logging.info("Processing new YAML content:")
     for outputContent in yamlList:
         yamlContent = yaml.safe_load(outputContent)
         if yamlContent is None:
-            logging.warning("Skipped empty or invalid YAML content")
+            logging.warning("Skipped empty or invalid YAML content during template processing")
             continue
 
         name = yamlContent.get('metadata', {}).get('name', '').lower()
         kind = yamlContent.get('kind', '').lower()
+        if not name or not kind:
+            logging.warning("YAML content is missing required metadata or kind fields")
+            continue
 
         yamlFileName = f"{name}-{kind}" if name else kind
         newFileName = yamlFileName + '.yaml'
@@ -221,6 +234,8 @@ def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
         try:
             with open(newFilePath, "w") as f:
                 f.writelines(outputContent)
+            logging.info(f"Processed and saved YAML: '{newFileName}' at path: {newFilePath}")
+
         except Exception as e:
             logging.error(f"Failed to write file '{newFilePath}': {e}")
 
@@ -230,7 +245,7 @@ def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
     # Copying template values.yaml instead of values.yaml from chart
     shutil.copyfile(os.path.join(os.path.dirname(os.path.realpath(__file__)), "chart-templates", "values.yaml"), os.path.join(destinationChartPath, "values.yaml"))
 
-    logging.info("Chart copied.\n")
+    logging.info(f"Finished processing chart: '{chartName}'\n")
 
 # Given a resource Kind, return all filepaths of that resource type in a chart directory
 def findTemplatesOfType(helmChart, kind):
