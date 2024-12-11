@@ -726,15 +726,19 @@ def addCRDs(repo, chart, outputDir):
     if not os.path.exists(chartPath):
         logging.critical(f"Chart path not found at: {chartPath}")
         exit(1)
+
+    crdPath = os.path.join(chartPath, "crds")
+    if not os.path.exists(crdPath):
+        logging.info(f"No CRDs for repo: {repo}")
+        return
     
-    # Path where the rendered CRDs will be stored
-    destinationPath = os.path.join(outputDir, chart['name'], "crds")
+    destinationPath = os.path.join(outputDir, chart.get('name', ''), "crds")
     if os.path.exists(destinationPath): # If path exists, remove and re-clone
-        logging.warning(f"Destination path already exists. Removing: {destinationPath}")
+        logging.warning(f"Destination CRDs path already exists. Removing: {destinationPath}")
         shutil.rmtree(destinationPath)
 
-    os.makedirs(destinationPath)
     logging.info(f"Created destination path for CRDs: {destinationPath}")
+    os.makedirs(destinationPath)
 
     for filename in os.listdir(destinationPath):
         filepath = os.path.join(destinationPath, filename)
@@ -762,46 +766,6 @@ def addCRDs(repo, chart, outputDir):
             logging.error(f"Unexpected error while processing file {filepath}: {e}")
 
     logging.info(f"CRD processing completed for chart '{chart['name']}' at {destinationPath}")
-
-    # Run Helm template with --include-crds to include CRDs in the output
-    # logging.info(f"Rendering Helm chart with CRDs: {chart['name']}")
-    # helmTemplateCommand = [
-    #     'helm', 'template', chartPath, '--include-crds',
-    # ]
-
-    # try:
-    #     helmTemplateOutput = subprocess.check_output(helmTemplateCommand, stderr=subprocess.STDOUT)
-    # except subprocess.CalledProcessError as e:
-    #     logging.critical(f"Helm template command failed: {e.output.decode()}")
-    #     exit(1)
-
-    # Split the rendered output by '---' to separate the resources
-    # yamlList = helmTemplateOutput.decode().split('---')
-
-    # Process each rendered YAML resource
-    # for outputContent in yamlList:
-    #     try:
-    #         yamlContent = yaml.safe_load(outputContent)
-    #         if yamlContent is None:
-    #             continue
-
-    #         # Only process CRD resources
-    #         if yamlContent.get("kind") == "CustomResourceDefinition":
-
-    #             # Extract the CRD name from the metadata and save the YAML
-    #             crdName = yamlContent["metadata"]["name"]
-    #             newFileName = f"{crdName}.yaml"
-    #             newFilePath = os.path.join(destinationPath, newFileName)
-
-    #             # Save the CRD YAML file
-    #             with open(newFilePath, "w") as f:
-    #                 yaml.dump(yamlContent, f, default_flow_style=False)
-
-    #             logging.info(f"Saved CRD to: {newFilePath}")
-    #     except Exception as e:
-    #         logging.warning(f"Failed to process YAML content: {e}")
-
-    logging.info(f"CRDs for chart '{chart['name']}' have been added to {destinationPath}")
 
 def chartConfigAcceptable(chart):
     helmChart = chart["name"]
