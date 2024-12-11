@@ -176,7 +176,8 @@ def updateResources(outputDir, repo, chart):
             updateServiceAccount(yamlContent)
 
         elif kind == "ClusterRoleBinding":
-            if not chart.get('skipRBACOverrides', False):
+            skip_rbac_override = chart.get('skipRBACOverrides', False)
+            if not skip_rbac_override:
                 logging.info(f"Updating ClusterRoleBinding in {filePath}")
                 updateClusterRoleBinding(yamlContent)
             else:
