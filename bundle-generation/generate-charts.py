@@ -744,7 +744,9 @@ def addCRDs(repo, chart, outputDir):
 
     for filename in os.listdir(crdPath):
         if not filename.endswith(".yaml"): 
+            logging.debug(f"Skipping non-YAML file: {filename}")
             continue
+
         filepath = os.path.join(crdPath, filename)
         with open(filepath, 'r') as f:
             logging.info(f"filepath {filepath}")
@@ -752,8 +754,12 @@ def addCRDs(repo, chart, outputDir):
             resourceFile = yaml.safe_load(f)
 
         if resourceFile["kind"] == "CustomResourceDefinition":
+            targetPath = os.path.join(destinationPath, filename)
             shutil.copyfile(filepath, os.path.join(destinationPath, filename))
-
+            logging.info(f"Copied CRD file to: {targetPath}")
+        else:
+            logging.debug(f"File {filename} does not contain a CRD. Skipping.")
+    logging.info(f"CRD processing completed for chart '{chart['name']}' at {destinationPath}")
 
 def chartConfigAcceptable(chart):
     helmChart = chart["name"]
