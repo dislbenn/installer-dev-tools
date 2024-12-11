@@ -736,7 +736,7 @@ def addCRDs(repo, chart, outputDir):
     # Run Helm template with --include-crds to include CRDs in the output
     logging.info(f"Rendering Helm chart with CRDs: {chart['name']}")
     helmTemplateCommand = [
-        'helm', 'template', chartPath, '--include-crds'
+        'helm', 'template', chartPath, '--include-crds', '--debug'
     ]
 
     try:
