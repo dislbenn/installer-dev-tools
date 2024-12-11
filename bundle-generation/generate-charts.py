@@ -134,39 +134,75 @@ def escapeTemplateVariables(helmChart, variables):
 
 # Copy chart-templates to a new helmchart directory
 def updateResources(outputDir, repo, chart):
-    logging.info(" Updating resources!")
+    logging.info("Starting resource update process ...")
+
     # Create main folder
     always_or_toggle = chart['always-or-toggle']
     chartDir = os.path.join(outputDir, "charts", always_or_toggle, chart['name'])
     templateDir = os.path.join(chartDir, "templates")
 
+    # Check if template directory exists
+    if not os.path.exists(templateDir):
+        logging.error(f"Template directory {templateDir} does not exist. Exiting update process.")
+        return # Exit early if the template directory doesn't exist
+
     for tempFile in os.listdir(templateDir):
         filePath = os.path.join(templateDir, tempFile)
-        with open(filePath, 'r') as f:
-            yamlContent = yaml.safe_load(f)
-        kind = yamlContent["kind"]
+
+        try:
+            with open(filePath, 'r') as f:
+                yamlContent = yaml.safe_load(f)
+        except Exception as e:
+            logging.error(f"Error reading YAML content from {filePath}: {e}")
+            return
+
+        # Log the kind of resource being processed   
+        kind = yamlContent.get("kind")
+        logging.info(f"Found resource of kind: {kind} in {filePath}")
+
+        # Perform the appropriate update action based on the kind
         if kind == "AddOnDeploymentConfig":
-            logging.info(" Updating AddOnDeploymentConfig!")
+            logging.info(f"Updating AddOnDeploymentConfig in {filePath}")
             updateAddOnDeploymentConfig(yamlContent)
+
         elif kind == "ClusterManagementAddOn":
-            logging.info(" Updating ClusterManagementAddOn!")
+            logging.info(f"Updating ClusterManagementAddOn in {filePath}")
             updateClusterManagementAddOn(yamlContent)
-            if chart['auto-install-for-all-clusters']:
+            if chart.get('auto-install-for-all-clusters', False):
                 installAddonForAllClusters(yamlContent)
+
         elif kind == "ServiceAccount":
-            logging.info(" Updating ServiceAccount!")
+            logging.info(f"Updating ServiceAccount in {filePath}")
             updateServiceAccount(yamlContent)
+
         elif kind == "ClusterRoleBinding":
-            if not chart['skipRBACOverrides']:
-                logging.info(" Updating ClusterRoleBinding!")
+            if not chart.get('skipRBACOverrides', False):
+                logging.info(f"Updating ClusterRoleBinding in {filePath}")
                 updateClusterRoleBinding(yamlContent)
+            else:
+                logging.warning(f"Skipping ClusterRoleBinding update (RBAC override is disabled) in {filePath}")
+
         else:
-            logging.info(" No updates for kind %s at this step.", kind)
-            continue
-        with open(filePath, 'w') as f:
-            yaml.dump(yamlContent, f, width=float("inf"))
-    # Escape template variables
-    escapeTemplateVariables(chartDir, chart["escape-template-variables"])
+            logging.warning(f"Skipping unsupported kind '{kind}' in {filePath}. No updates applied")
+            continue # Skip unsupported kinds
+
+        try:
+            with open(filePath, 'w') as f:
+                yaml.dump(yamlContent, f, width=float("inf"))
+            logging.info(f"Successfully updated {filePath}")
+        except Exception as e:
+            logging.error(f"Error writing YAML content to {filePath}: {e}")
+            return
+
+    try:
+        # Escape template variables
+        escapeTemplateVariables(chartDir, chart["escape-template-variables"])
+        logging.info(f"Template variables escaped successfully for {chartDir}.")
+    except Exception as e:
+        logging.error(f"Error escaping template variables in {chartDir}: {e}")
+        return
+
+    logging.info("All resources updated successfully.")
 
 
 # Copy chart-templates to a new helmchart directory
@@ -266,7 +302,15 @@ def findTemplatesOfType(helmChart, kind):
 # If the image-key referenced in the deployment does not exist in `imageMappings` in the Config.yaml, this will fail. Images must be explicitly defined
 def fixEnvVarImageReferences(helmChart, imageKeyMapping):
     logging.info("Fixing image references in container 'env' section in deployments and values.yaml ...")
+    
+    # Path to the values.yaml file
     valuesYaml = os.path.join(helmChart, "values.yaml")
+
+    # Check if the values.yaml file exists
+    if not os.path.exists(valuesYaml):
+        logging.error(f"{valuesYaml} does not exist. Skipping environment variable image reference updates.")
+        return
+
     with open(valuesYaml, 'r') as f:
         values = yaml.safe_load(f)
     deployments = findTemplatesOfType(helmChart, 'Deployment')
@@ -306,7 +350,15 @@ def fixEnvVarImageReferences(helmChart, imageKeyMapping):
 # If the image-key referenced in the deployment does not exist in `imageMappings` in the Config.yaml, this will fail. Images must be explicitly defined
 def fixImageReferences(helmChart, imageKeyMapping):
     logging.info("Fixing image and pull policy references in deployments and values.yaml ...")
+
+    # Path to the values.yaml file
     valuesYaml = os.path.join(helmChart, "values.yaml")
+
+    # Check if the values.yaml file exists
+    if not os.path.exists(valuesYaml):
+        logging.error(f"{valuesYaml} does not exist. Skipping image and pull policy updates.")
+        return  # Exit the function if the file doesn't exist
+
     with open(valuesYaml, 'r') as f:
         values = yaml.safe_load(f)
     
@@ -814,7 +866,8 @@ def main():
             copyHelmChart(destinationChartPath, repo["repo_name"], chart, chartVersion)
 
             # Render the helm chart before updating the chart resources.
-            renderChart(destinationChartPath)
+            if not renderChart(destinationChartPath):
+                logging.error(f"Failed to render chart {destinationChartPath}")
             
             # Update the helm chart resources with additional overrides
             updateResources(destination, repo["repo_name"], chart)
@@ -824,7 +877,7 @@ def main():
                 exclusions = chart["exclusions"] if "exclusions" in chart else []
                 inclusions = chart["inclusions"] if "inclusions" in chart else []
                 injectRequirements(destinationChartPath, chart["name"], chart["imageMappings"], chart["skipRBACOverrides"], exclusions, inclusions, branch)
-                logging.info("Overrides added. \n")
+                logging.info("Overrides added.\n")
 
     logging.info("All repositories and operators processed successfully.")
     logging.info("Performing cleanup...")
