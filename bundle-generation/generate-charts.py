@@ -784,7 +784,7 @@ def getChartVersion(updateChartVersion, repo):
     if not updateChartVersion:
         return chartVersion
 
-    logging.info("Calculating chart version ...")
+    logging.info("Calculating chart version")
     if 'branch' not in repo:
         logging.warning("No branch specified for repo %s, skip.", repo["repo_name"])
         return chartVersion
@@ -874,13 +874,13 @@ def main():
                 exit(1)
 
             chart_name = chart.get("name", "")
-            logging.info(f"Helm Chartifying: '{chart_name}' ...")
+            logging.info(f"Helm Chartifying: '{chart_name}'")
 
             # Copy over all CRDs to the destination directory
             logging.info(f"Adding CRDs for chart: '{chart_name}'")
             addCRDs(repo["repo_name"], chart, destination)
 
-            logging.info(f"Creating helm chart: '{chart_name}' ...")
+            logging.info(f"Creating helm chart: '{chart_name}'")
             always_or_toggle = chart['always-or-toggle']
             destinationChartPath = os.path.join(destination, "charts", always_or_toggle, chart['name'])
 
