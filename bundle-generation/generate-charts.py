@@ -873,14 +873,13 @@ def main():
                 logging.critical("Unable to generate helm chart without configuration requirements.")
                 exit(1)
 
-            logging.info("Helm Chartifying - %s", chart["name"])
+            logging.info(f"Helm Chartifying - '{chart["name"]}'\n")
 
             # Copy over all CRDs to the destination directory
-            logging.info("Adding CRDs for chart: '%s' ...", chart["name"])
+            logging.info(f"Adding CRDs for chart: '{chart["name"]}'")
             addCRDs(repo["repo_name"], chart, destination)
 
-            logging.info("Creating helm chart: '%s' ...", chart["name"])
-
+            logging.info(f"Creating helm chart: '{chart["name"]}'")
             always_or_toggle = chart['always-or-toggle']
             destinationChartPath = os.path.join(destination, "charts", always_or_toggle, chart['name'])
 
