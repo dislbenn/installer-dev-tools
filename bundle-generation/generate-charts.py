@@ -483,10 +483,10 @@ def injectHelmFlowControl(deployment, branch):
 {{- end }}
 """
 
-#         if is_version_compatible(branch, '2.13', '2.8'):
-#             if 'replicas:' in line.strip():
-#                 lines[i] = """  replicas: {{ .Values.hubconfig.replicaCount }}
-# """
+        if is_version_compatible(branch, '9.9', '9.9', '9.9'):
+            if 'replicas:' in line.strip():
+                lines[i] = """  replicas: {{ .Values.hubconfig.replicaCount }}
+"""
 
         if line.strip() == "seccompProfile:":
             next_line = lines[i+1]  # Ignore possible reach beyond end-of-list, not really possible
@@ -529,7 +529,7 @@ def updateDeployments(chartName, helmChart, exclusions, inclusions, branch):
         with open(deployment, 'r') as f:
             deploy = yaml.safe_load(f)
         deploy['metadata'].pop('namespace')
-        deploy['spec']['replicas'] = "{{ .Values.hubconfig.replicaCount }}"
+        # deploy['spec']['replicas'] = "{{ .Values.hubconfig.replicaCount }}"
         affinityList = deploySpec['affinity']['podAntiAffinity']['preferredDuringSchedulingIgnoredDuringExecution']
         for antiaffinity in affinityList:
             antiaffinity['podAffinityTerm']['labelSelector']['matchExpressions'][0]['values'][0] = deploy['metadata']['name']
