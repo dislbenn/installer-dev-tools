@@ -876,7 +876,7 @@ def main():
             logging.info("Helm Chartifying - %s", chart["name"])
 
             # Copy over all CRDs to the destination directory
-            logging.info("Adding CRDs - %s", chart["name"])
+            logging.info("Adding CRDs for chart: '%s' ...", chart["name"])
             addCRDs(repo["repo_name"], chart, destination)
 
             logging.info("Creating helm chart: '%s' ...", chart["name"])
