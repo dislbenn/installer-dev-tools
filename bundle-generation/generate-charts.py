@@ -784,7 +784,9 @@ def getChartVersion(updateChartVersion, repo):
     if not updateChartVersion:
         return chartVersion
 
-    logging.info("Calculating chart version")
+    repo_name = repo.get("name", "")
+    logging.info(f"Calculating chart version for '{repo_name}'")
+
     if 'branch' not in repo:
         logging.warning("No branch specified for repo %s, skip.", repo["repo_name"])
         return chartVersion
