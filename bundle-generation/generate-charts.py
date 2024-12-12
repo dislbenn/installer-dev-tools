@@ -246,7 +246,7 @@ def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
     else:
         logging.warning(f"No specific values.yaml found for chart '{chartName}'")
 
-    logging.info(f"Running 'helm template' for chart: '{chartName}' at path: {chartPath}")
+    logging.info(f"Running 'helm template' for chart: '{chartName}'")
     helmTemplateOutput = subprocess.getoutput(['helm template '+ chartPath])
 
     yamlList = helmTemplateOutput.split('---')
