@@ -873,21 +873,21 @@ def main():
                 logging.critical("Unable to generate helm chart without configuration requirements.")
                 exit(1)
 
-            logging.info(f"Helm Chartifying - '{chart["name"]}'\n")
+            chart_name = chart.get("name", "")
+            logging.info(f"Helm Chartifying - '{chart_name}'\n")
 
             # Copy over all CRDs to the destination directory
-            logging.info("Adding CRDs for chart: '%s' ...", chart["name"])
+            logging.info(f"Adding CRDs for chart: '{chart_name}' ...")
             addCRDs(repo["repo_name"], chart, destination)
 
-            logging.info("Creating helm chart: '%s' ...", chart["name"])
-
+            logging.info(f"Creating helm chart: '{chart_name}' ...")
             always_or_toggle = chart['always-or-toggle']
             destinationChartPath = os.path.join(destination, "charts", always_or_toggle, chart['name'])
 
             chartVersion = getChartVersion(chart['updateChartVersion'], repo)
 
             # Template Helm Chart Directory from 'chart-templates'
-            logging.info("Templating helm chart '%s' ...", chart["name"])
+            logging.info("Templating helm chart '%s' ...", chart_name)
             copyHelmChart(destinationChartPath, repo["repo_name"], chart, chartVersion)
 
             # Render the helm chart before updating the chart resources.
