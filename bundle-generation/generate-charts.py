@@ -210,7 +210,7 @@ def updateResources(outputDir, repo, chart):
 # Copy chart-templates to a new helmchart directory
 def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
     chartName = chart.get('name', '')
-    logging.info(f"Starting to process chart '{chartName}' chart directory ...")
+    logging.info(f"Starting to process chart '{chartName}' chart directory")
 
     # Create main folder
     chartPath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "tmp", repo, chart["chart-path"])
@@ -241,10 +241,10 @@ def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
 
     specificValues = os.path.join(os.path.dirname(os.path.realpath(__file__)), "chart-values", chart['name'], "values.yaml")
     if os.path.exists(specificValues):
-        logging.info(f"Using specific values.yaml for chart '{chartName}' from: {specificValues}\n")
+        logging.info(f"Using specific values.yaml for chart '{chartName}' from: {specificValues}")
         shutil.copyfile(specificValues, os.path.join(chartPath, "values.yaml"))
     else:
-        logging.warning(f"No specific values.yaml found for chart '{chartName}'\n")
+        logging.warning(f"No specific values.yaml found for chart '{chartName}'")
 
     logging.info(f"Running 'helm template' for chart: '{chartName}'")
     helmTemplateOutput = subprocess.getoutput(['helm template '+ chartPath])
