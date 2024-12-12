@@ -795,7 +795,7 @@ def getChartVersion(updateChartVersion, repo):
     branch_name = repo['branch']
     logging.debug(f"Processing branch name: {branch_name}")
 
-    version = repo['branch'].replace("backplane-", "")
+    version = branch_name.replace("release-", "").replace("backplane-", "")
     logging.debug(f"Extracted version after removing prefix: {version}")
 
     if not version.replace(".", "").isdecimal():
