@@ -436,7 +436,6 @@ def is_version_compatible(branch, min_release_version, min_backplane_version, mi
         return branch_version >= min_branch_version
 
     else:
-        logging.error(f"Version not found in branch: {branch}")
         return False
 
 # injectHelmFlowControl injects advanced helm flow control which would typically make a .yaml file more difficult to parse. This should be called last.
