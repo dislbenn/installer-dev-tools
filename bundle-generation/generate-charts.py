@@ -738,38 +738,22 @@ def addCRDs(repo, chart, outputDir):
 
     os.makedirs(destinationPath)
     logging.info(f"Created destination path for CRDs: {destinationPath}")
-    
-    # documents = result.stdout.split('---')  # Helm separates multiple resources with '---'
-    # for doc in documents:
-    #     try:
-    #         resource = yaml.safe_load(doc)
-    #         if resource and resource.get("kind") == "CustomResourceDefinition":
-    #             # Write the CRD YAML to a file in the crd_dir
-    #             crd_name = resource["metadata"]["name"]
-    #             crd_filepath = os.path.join(destinationPath, f"{crd_name}.yaml")
-                
-    #             with open(crd_filepath, "w") as crd_file:
-    #                 yaml.dump(resource, crd_file, default_flow_style=False)
-    #                 logging.info(f"Extracted and saved CRD: {crd_name}")
 
-    #     except yaml.YAMLError as e:
-    #         logging.error(f"Error processing YAML document: {e}")        
+    for filename in os.listdir(crdPath):
+        if not filename.endswith(".yaml"): 
+            logging.debug(f"File '{filename}' is not a YAML file. Skipping processing.")
+            continue
 
-    # for filename in os.listdir(crdPath):
-    #     if not filename.endswith(".yaml"): 
-    #         logging.debug(f"Skipping non-YAML file: {filename}")
-    #         continue
+        filepath = os.path.join(crdPath, filename)
+        with open(filepath, 'r') as f:
+            resourceFile = yaml.safe_load(f)
 
-    #     filepath = os.path.join(crdPath, filename)
-    #     with open(filepath, 'r') as f:
-    #         resourceFile = yaml.safe_load(f)
-
-    #     if resourceFile["kind"] == "CustomResourceDefinition":
-    #         targetPath = os.path.join(destinationPath, filename)
-    #         shutil.copyfile(filepath, os.path.join(destinationPath, filename))
-    #         logging.info(f"Copied CRD file to: {targetPath}")
-    #     else:
-    #         logging.debug(f"File {filename} does not contain a CRD. Skipping.")
+        if resourceFile["kind"] == "CustomResourceDefinition":
+            targetPath = os.path.join(destinationPath, filename)
+            shutil.copyfile(filepath, targetPath)
+            logging.info(f"Copied CRD file to: {targetPath}")
+        else:
+            logging.debug(f"File {filename} does not contain a CRD. Skipping.")
     logging.info(f"CRD processing completed for chart '{chart['name']}' at {destinationPath}\n")
 
 def chartConfigAcceptable(chart):
