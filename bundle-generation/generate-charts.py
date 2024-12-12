@@ -751,7 +751,7 @@ def addCRDs(repo, chart, outputDir):
         if resourceFile["kind"] == "CustomResourceDefinition":
             targetPath = os.path.join(destinationPath, filename)
             shutil.copyfile(filepath, targetPath)
-            logging.info(f"Copied CRD file '{filename}' to: '{targetPath}'")
+            logging.info(f"Generated CRD file '{filename}'")
         else:
             logging.debug(f"Skipping file '{filename}' as it does not contain a CRD.")
 
