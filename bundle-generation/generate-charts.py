@@ -798,7 +798,7 @@ def getChartVersion(updateChartVersion, repo):
         return chartVersion
 
     chartVersion = version
-    logging.info("Chart version: %s", chartVersion)
+    logging.info("Detected chart version: %s", chartVersion)
     # TODO: consider getting chart version from chart template
     return chartVersion
 
