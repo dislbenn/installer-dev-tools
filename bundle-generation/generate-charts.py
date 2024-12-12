@@ -272,7 +272,6 @@ def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
         try:
             with open(newFilePath, "w") as f:
                 f.writelines(outputContent)
-            logging.info(f"Processed and saved YAML: '{newFileName}' at path: {newFilePath}")
 
         except Exception as e:
             logging.error(f"Failed to write file '{newFilePath}': {e}")
