@@ -754,7 +754,8 @@ def addCRDs(repo, chart, outputDir):
             logging.info(f"Copied CRD file '{filename}' to: '{targetPath}'")
         else:
             logging.debug(f"Skipping file '{filename}' as it does not contain a CRD.")
-    logging.info(f"CRD processing completed for chart '{chart['name']}' at {destinationPath}\n")
+
+    logging.info(f"Finished processing CRDs for chart '{chart['name']}'. Files saved to '{destinationPath}'.")
 
 def chartConfigAcceptable(chart):
     helmChart = chart["name"]
