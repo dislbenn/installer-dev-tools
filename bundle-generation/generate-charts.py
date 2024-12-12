@@ -722,6 +722,8 @@ def addCRDs(repo, chart, outputDir):
         exit(1) 
 
     chartPath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "tmp", repo, chart["chart-path"])
+    logging.debug(f"Chart path resolved to: '{chartPath}'")
+
     if not os.path.exists(chartPath):
         logging.critical(f"Chart path not found at: {chartPath}")
         exit(1)
@@ -731,13 +733,15 @@ def addCRDs(repo, chart, outputDir):
         logging.info(f"No CRDs for repo: {repo}")
         return
     
-    destinationPath = os.path.join(outputDir, "crds", chart['name'])
-    if os.path.exists(destinationPath): # If path exists, remove and re-clone
-        logging.warning(f"Destination CRDs path already exists. Removing: {destinationPath}")
-        shutil.rmtree(destinationPath)
+    destinationCRDPath = os.path.join(outputDir, "crds", chart['name'])
+    logging.debug(f"Destination chart path: '{destinationCRDPath}'")
 
-    os.makedirs(destinationPath)
-    logging.info(f"Created destination path for CRDs: {destinationPath}")
+    if os.path.exists(destinationCRDPath): # If path exists, remove and re-clone
+        logging.warning(f"Destination CRDs path already exists. Removing: {destinationCRDPath}")
+        shutil.rmtree(destinationCRDPath)
+
+    os.makedirs(destinationCRDPath)
+    logging.info(f"Created destination path for CRDs: {destinationCRDPath}")
 
     for filename in os.listdir(crdPath):
         if not filename.endswith(".yaml"): 
@@ -749,7 +753,7 @@ def addCRDs(repo, chart, outputDir):
             resourceFile = yaml.safe_load(f)
 
         if resourceFile["kind"] == "CustomResourceDefinition":
-            targetPath = os.path.join(destinationPath, filename)
+            targetPath = os.path.join(destinationCRDPath, filename)
             shutil.copyfile(filepath, targetPath)
             logging.info(f"Generated CRD file '{filename}'")
         else:
