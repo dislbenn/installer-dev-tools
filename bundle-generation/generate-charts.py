@@ -891,10 +891,12 @@ def main():
             always_or_toggle = chart['always-or-toggle']
             destinationChartPath = os.path.join(destination, "charts", always_or_toggle, chart['name'])
 
+            # Extract the chart version from the charts configuration, 
+            # ensuring the version is derived from the repository branch when applicable.
             chartVersion = getChartVersion(chart['updateChartVersion'], repo)
 
             # Template Helm Chart Directory from 'chart-templates'
-            logging.info("Templating helm chart '%s' ...", chart_name)
+            logging.info(f"Templating helm chart '{chart_name}'")
             copyHelmChart(destinationChartPath, repo["repo_name"], chart, chartVersion)
 
             # Render the helm chart before updating the chart resources.
