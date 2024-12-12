@@ -782,23 +782,29 @@ def chartConfigAcceptable(chart):
 def getChartVersion(updateChartVersion, repo):
     chartVersion = ""
     if not updateChartVersion:
+        logging.warning("Update chart version flag is not set. Returning default chart version.")
         return chartVersion
 
     repo_name = repo.get("repo_name", "")
-    logging.info(f"Calculating chart version for '{repo_name}'")
+    logging.info(f"Calculating chart version for repository '{repo_name}'.")
 
     if 'branch' not in repo:
-        logging.warning(f"No branch specified for repo '{repo_name}', skip.")
+        logging.warning(f"No branch specified for repository '{repo_name}', skipping chart version calculation.")
         return chartVersion
+    
+    branch_name = repo['branch']
+    logging.debug(f"Processing branch name: {branch_name}")
 
     version = repo['branch'].replace("backplane-", "")
+    logging.debug(f"Extracted version after removing prefix: {version}")
+
     if not version.replace(".", "").isdecimal():
-        logging.warning("Unable to use branch name %s as chart version for repo %s, skip.",
-                        repo['branch'], repo["branch"])
+        logging.warning("Unable to use branch name '%s' as chart version for repo '%s', skip.", branch_name, repo_name)
         return chartVersion
 
     chartVersion = version
     logging.info(f"Detected chart version: {chartVersion}\n")
+
     # TODO: consider getting chart version from chart template
     return chartVersion
 
