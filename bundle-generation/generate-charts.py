@@ -873,7 +873,7 @@ def main():
                 logging.critical("Unable to generate helm chart without configuration requirements.")
                 exit(1)
 
-            logging.info(f"Helm Chartifying - '{chart["name"]}'\n")
+            logging.info(f"Helm Chartifying - '{chart["name"]}'")
 
             # Copy over all CRDs to the destination directory
             logging.info(f"Adding CRDs for chart: '{chart["name"]}'")
