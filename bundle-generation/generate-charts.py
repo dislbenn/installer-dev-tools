@@ -241,10 +241,10 @@ def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
 
     specificValues = os.path.join(os.path.dirname(os.path.realpath(__file__)), "chart-values", chart['name'], "values.yaml")
     if os.path.exists(specificValues):
-        logging.info(f"Using specific values.yaml for chart '{chartName}' from: {specificValues}")
+        logging.info(f"Using specific values.yaml for chart '{chartName}' from: {specificValues}\n")
         shutil.copyfile(specificValues, os.path.join(chartPath, "values.yaml"))
     else:
-        logging.warning(f"No specific values.yaml found for chart '{chartName}'")
+        logging.warning(f"No specific values.yaml found for chart '{chartName}'\n")
 
     logging.info(f"Running 'helm template' for chart: '{chartName}'")
     helmTemplateOutput = subprocess.getoutput(['helm template '+ chartPath])
