@@ -734,20 +734,6 @@ def addCRDs(repo, chart, outputDir):
         logging.info(f"No CRDs for repo: {repo}")
         return
     
-    # Run helm template with --include-crds to render the CRDs
-    helm_command = [
-        "helm", "template", chart["name"],
-        "--include-crds",
-        chartPath
-    ]
-
-    try:
-        result = subprocess.run(helm_command, check=True, capture_output=True, text=True)
-        logging.info(f"results {result}")
-    except subprocess.CalledProcessError as e:
-        logging.critical(f"Error running helm template: {e.stderr}")
-        exit(1)
-
     destinationPath = os.path.join(outputDir, "crds", chart['name'])
     if os.path.exists(destinationPath): # If path exists, remove and re-clone
         logging.warning(f"Destination CRDs path already exists. Removing: {destinationPath}")
@@ -756,20 +742,21 @@ def addCRDs(repo, chart, outputDir):
     os.makedirs(destinationPath)
     logging.info(f"Created destination path for CRDs: {destinationPath}")
     
-    documents = result.stdout.split('---')  # Helm separates multiple resources with '---'
-    for doc in documents:
-        try:
-            resource = yaml.safe_load(doc)
-            if resource and resource.get("kind") == "CustomResourceDefinition":
-                # Write the CRD YAML to a file in the crd_dir
-                crd_name = resource["metadata"]["name"]
-                crd_filepath = os.path.join(destinationPath, f"{crd_name}.yaml")
+    # documents = result.stdout.split('---')  # Helm separates multiple resources with '---'
+    # for doc in documents:
+    #     try:
+    #         resource = yaml.safe_load(doc)
+    #         if resource and resource.get("kind") == "CustomResourceDefinition":
+    #             # Write the CRD YAML to a file in the crd_dir
+    #             crd_name = resource["metadata"]["name"]
+    #             crd_filepath = os.path.join(destinationPath, f"{crd_name}.yaml")
                 
-                with open(crd_filepath, "w") as crd_file:
-                    yaml.dump(resource, crd_file, default_flow_style=False)
-                    logging.info(f"Extracted and saved CRD: {crd_name}")
-        except yaml.YAMLError as e:
-            logging.error(f"Error processing YAML document: {e}")        
+    #             with open(crd_filepath, "w") as crd_file:
+    #                 yaml.dump(resource, crd_file, default_flow_style=False)
+    #                 logging.info(f"Extracted and saved CRD: {crd_name}")
+
+    #     except yaml.YAMLError as e:
+    #         logging.error(f"Error processing YAML document: {e}")        
 
     # for filename in os.listdir(crdPath):
     #     if not filename.endswith(".yaml"): 
