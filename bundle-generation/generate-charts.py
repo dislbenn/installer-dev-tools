@@ -10,6 +10,7 @@ import yaml
 import logging
 import coloredlogs
 import subprocess
+from helm.helm import HelmClient
 import re
 from git import Repo, exc
 from packaging import version
@@ -200,7 +201,17 @@ def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
     if os.path.exists(specificValues):
         shutil.copyfile(specificValues, os.path.join(chartPath, "values.yaml"))
 
-    helmTemplateOutput = subprocess.getoutput(['helm template '+ chartPath + ' --skip-crds'])
+    values = {}
+    if os.path.exists(os.path.join(chartPath, "values.yaml")):
+        with open(os.path.join(chartPath, "values.yaml")) as values_file:
+            values = yaml.safe_load(values_file)
+
+    client = HelmClient()
+    rendered_templates = client.render_chart(chartYaml, values)
+    logging.info(f"Rendered chart {rendered_templates}")
+    exit(0)
+
+    # helmTemplateOutput = subprocess.getoutput(['helm template '+ chartPath + ' --skip-crds'])
     yamlList = helmTemplateOutput.split('---')
     for outputContent in yamlList:
         yamlContent = yaml.safe_load(outputContent)
