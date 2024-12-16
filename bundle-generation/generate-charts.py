@@ -10,7 +10,7 @@ import yaml
 import logging
 import coloredlogs
 import subprocess
-from helm import Helm
+import pyhelm
 import re
 from git import Repo, exc
 from packaging import version
@@ -206,7 +206,7 @@ def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
         with open(os.path.join(chartPath, "values.yaml")) as values_file:
             values = yaml.safe_load(values_file)
             
-    helm = Helm()
+    helm = pyhelm.Helm()
     rendered_ouput = helm.template(
         chart=chartYamlPath
     )
