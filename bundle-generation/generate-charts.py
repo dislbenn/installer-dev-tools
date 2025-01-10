@@ -593,7 +593,7 @@ def updateHelmResources(chartName, helmChart, exclusions, inclusions, branch):
 
     resource_kinds = [
         "ConfigMap", "NetworkPolicy", "PersistentVolumeClaim", "Route",
-        "Secret", "Service", "ServiceAccount", "StatefulSet"
+        "Secret", "Service", "StatefulSet"
     ]
 
     for kind in resource_kinds:
