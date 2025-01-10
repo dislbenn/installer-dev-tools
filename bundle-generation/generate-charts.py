@@ -616,9 +616,10 @@ def updateHelmResources(chartName, helmChart, exclusions, inclusions, branch):
                     # If no namespace is found, use the default Helm namespace
                     resource_data['metadata']['namespace'] = """{{ .Values.global.namespace }}"""
                     logging.info(f"Namespace not set for {resource_name}. Using default '{{ .Values.global.namespace }}'.")
-                    
+
                 else:
                     resource_data['metadata']['namespace'] = f"{{{{ default \"{current_namespace}\" .Values.global.namespace }}}}"
+                    logging.info(f"namespace: {resource_data['metadata']["namespace"]}")
                     logging.info(f"Namespace for {resource_name} set to: {current_namespace} (Helm default used).")
 
                 with open(template_path, 'w') as f:
