@@ -382,7 +382,8 @@ def fixImageReferences(helmChart, imageKeyMapping):
             # temp = container['image'] 
             container['image'] = "{{ .Values.global.imageOverrides." + image_key + " }}"
             container['imagePullPolicy'] = "{{ .Values.global.pullPolicy }}"
-            args = container['args']
+            
+            args = container.get('args', [])
             refreshed_args = []
             for arg in args:
                 if "--agent-image-name" not in arg:
