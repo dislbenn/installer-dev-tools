@@ -587,6 +587,24 @@ def updateDeployments(chartName, helmChart, exclusions, inclusions, branch):
         if 'pullSecretOverride' in inclusions:
             addPullSecretOverride(deployment)
 
+# updateDeployments adds standard configuration to the deployments (antiaffinity, security policies, and tolerations)
+def updateHelmResources(chartName, helmChart, exclusions, inclusions, branch):
+    logging.info("Updating resources ...")
+    # deploySpecYaml = os.path.join(os.path.dirname(os.path.realpath(__file__)), "chart-templates/templates/deploymentspec.yaml")
+    # with open(deploySpecYaml, 'r') as f:
+    #     deploySpec = yaml.safe_load(f)
+    
+    templates = findTemplatesOfType(helmChart, 'Configmap')
+    for template in templates:
+        with open(template, 'r') as f:
+            resource = yaml.safe_load(f)
+        resource['metadata'].pop('namespace')
+
+        with open(template, 'w') as f:
+            yaml.dump(resource, f, width=float("inf"))
+        logging.info("Deployments updated with antiaffinity, security policies, and tolerations successfully. \n")
+
+
 # injectAnnotationsForAddonTemplate injects following annotations for deployments in the AddonTemplate:
 # - target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
 def injectAnnotationsForAddonTemplate(helmChart):
@@ -698,6 +716,7 @@ def injectRequirements(helmChart, chartName, imageKeyMapping, skipRBACOverrides,
 
     if not skipRBACOverrides:
         updateRBAC(helmChart, chartName)
+    updateHelmResources(chartName, helmChart, exclusions, inclusions, branch)
     updateDeployments(chartName, helmChart, exclusions, inclusions, branch)
 
     logging.info("Updated Chart '%s' successfully", helmChart)
