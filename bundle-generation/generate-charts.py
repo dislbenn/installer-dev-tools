@@ -646,7 +646,7 @@ def updateHelmResources(chartName, helmChart, exclusions, inclusions, branch):
                                 # Update target_namespace to reflect the subject_namespace
                                 target_namespace = f"{{{{ default \"{subject_namespace}\" .Values.global.namespace }}}}"
                                 subject['namespace'] = target_namespace
-                                logging.info(f"Subject namespace for {resource_name} set to: {subject_namespace} (Helm default used).")
+                                logging.info(f"Subject namespace for {resource_name} set to: {target_namespace} (Helm default used).")
                     
                 if kind == "MutatingWebhookConfiguration" or kind == "ValidatingWebhookConfiguration":
                     if 'webhooks' in resource_data:
@@ -667,7 +667,7 @@ def updateHelmResources(chartName, helmChart, exclusions, inclusions, branch):
                                         # Update target_namespace to reflect the service_namespace
                                         target_namespace = f"{{{{ default \"{service_namespace}\" .Values.global.namespace }}}}"
                                         subject['namespace'] = target_namespace
-                                        logging.info(f"Subject namespace for {resource_name} set to: {service_namespace} (Helm default used).")
+                                        logging.info(f"Subject namespace for {resource_name} set to: {target_namespace} (Helm default used).")
 
                 with open(template_path, 'w') as f:
                     yaml.dump(resource_data, f, width=float("inf"))
