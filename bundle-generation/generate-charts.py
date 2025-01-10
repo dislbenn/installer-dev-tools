@@ -592,7 +592,7 @@ def updateHelmResources(chartName, helmChart, exclusions, inclusions, branch):
     logging.info(f"Updating resources chart: {chartName}")
 
     resource_kinds = [
-        "ClusterRole", "ClusterRoleBinding" "ConfigMap", "Deployment", "MutatingWebhookConfiguration",
+        "ClusterRole", "ClusterRoleBinding", "ConfigMap", "Deployment", "MutatingWebhookConfiguration",
         "NetworkPolicy", "PersistentVolumeClaim", "RoleBinding", "Role", "Route", "Secret", "Service", "StatefulSet",
         "ValidatingWebhookConfiguration"
     ]
@@ -636,6 +636,7 @@ def updateHelmResources(chartName, helmChart, exclusions, inclusions, branch):
                 if kind == "ClusterRoleBinding" or kind == "RoleBinding":
                     if 'subjects' in resource_data:
                         for subject in resource_data['subjects']:
+                            logging.info
                             subject_namespace = subject.get('namespace', None)
                             if subject_namespace is None:
                                 # If no namespace is found, use the default Helm namespace
