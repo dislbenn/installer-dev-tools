@@ -594,17 +594,22 @@ def updateHelmResources(chartName, helmChart, exclusions, inclusions, branch):
     # with open(deploySpecYaml, 'r') as f:
     #     deploySpec = yaml.safe_load(f)
     
-    templates = findTemplatesOfType(helmChart, 'ConfigMap')
-    logging.info(f"Found templates {templates}")
-    for template in templates:
-        with open(template, 'r') as f:
-            resource = yaml.safe_load(f)
-            logging.info("resource: %s" % resource)
-        resource['metadata']['namespace'] = '{{ .Values.global.namespace }}'
+    kind_resources = [
+        "NetworkPolicy", "Service", "PersistentVolumeClaim", "ConfigMap", "Route", "ServiceAccount", "StatefulSet", "Secret"
+    ]
+    
+    for kind in kind_resources:            
+        templates = findTemplatesOfType(helmChart, kind)
+        logging.info(f"Found templates {templates}")
+        for template in templates:
+            with open(template, 'r') as f:
+                resource = yaml.safe_load(f)
+                logging.info("resource: %s" % resource)
+            resource['metadata']['namespace'] = '{{ .Values.global.namespace }}'
 
-        with open(template, 'w') as f:
-            yaml.dump(resource, f, width=float("inf"))
-        logging.info("Deployments updated with antiaffinity, security policies, and tolerations successfully. \n")
+            with open(template, 'w') as f:
+                yaml.dump(resource, f, width=float("inf"))
+            logging.info("Deployments updated with antiaffinity, security policies, and tolerations successfully. \n")
 
 
 # injectAnnotationsForAddonTemplate injects following annotations for deployments in the AddonTemplate:
