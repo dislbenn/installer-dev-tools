@@ -650,16 +650,20 @@ def updateHelmResources(chartName, helmChart, exclusions, inclusions, branch):
                     
                 if kind == "MutatingWebhookConfiguration" or kind == "ValidatingWebhookConfiguration":
                     if 'webhooks' in resource_data:
+                        logging.info("in webhooks")
                         for webhook in resource_data['webhooks']:
                             if 'clientConfig' in webhook:
+                                logging.info("in clientConfig")
                                 client_config = webhook['clientConfig']
                                 if 'service' in client_config:
+                                    logging.info("in service")
                                     service = client_config['service']
                                     service_namespace = service.get('namespace', None)
                                     if service_namespace is None:
                                         service['namespace'] = target_namespace
 
                                     else:
+                                        logging.info("updating namespace")
                                         # Update target_namespace to reflect the service_namespace
                                         target_namespace = f"{{{{ default \"{service_namespace}\" .Values.global.namespace }}}}"
                                         subject['namespace'] = target_namespace
