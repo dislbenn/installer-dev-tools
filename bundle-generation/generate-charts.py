@@ -623,7 +623,7 @@ def updateHelmResources(chartName, helmChart, exclusions, inclusions, branch):
 
                 target_namespace = resource_data['metadata']['namespace']
                     
-                if kind == "ClusterRoleBinding":
+                if kind == "ClusterRoleBinding" or kind == "RoleBinding":
                     if 'subjects' in resource_data:
                         for subject in resource_data['subjects']:
                             subject['namespace'] = target_namespace
