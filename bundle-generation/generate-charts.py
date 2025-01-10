@@ -598,6 +598,7 @@ def updateHelmResources(chartName, helmChart, exclusions, inclusions, branch):
     for template in templates:
         with open(template, 'r') as f:
             resource = yaml.safe_load(f)
+            logging.info("resource: %s" % resource)
         resource['metadata'].pop('namespace')
 
         with open(template, 'w') as f:
