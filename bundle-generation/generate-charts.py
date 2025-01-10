@@ -369,8 +369,6 @@ def fixImageReferences(helmChart, imageKeyMapping):
         
         containers = deploy['spec']['template']['spec']['containers']
         for container in containers:
-            logging.info("container: %s\n" % container)
-
             image_key = parse_image_ref(container['image'])["repository"]
             logging.info("image_key: %s\n" % image_key)
             try:
