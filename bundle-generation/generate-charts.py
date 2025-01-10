@@ -600,7 +600,9 @@ def updateHelmResources(chartName, helmChart, exclusions, inclusions, branch):
         with open(template, 'r') as f:
             resource = yaml.safe_load(f)
             logging.info("resource: %s" % resource)
-        resource['metadata'].pop('namespace')
+        resource['metadata'] = """"
+{{ .Values.global.namespace }}        
+"""
 
         with open(template, 'w') as f:
             yaml.dump(resource, f, width=float("inf"))
