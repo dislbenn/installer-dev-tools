@@ -621,6 +621,13 @@ def updateHelmResources(chartName, helmChart, exclusions, inclusions, branch):
                     resource_data['metadata']['namespace'] = f"{{{{ default \"{current_namespace}\" .Values.global.namespace }}}}"
                     logging.info(f"Namespace for {resource_name} set to: {current_namespace} (Helm default used).")
 
+                target_namespace = resource_data['metadata']['namespace']
+                    
+                if kind == "ClusterRoleBinding":
+                    if 'subjects' in resource_data:
+                        for subject in resource_data['subjects']:
+                            subject['namespace'] = target_namespace
+
                 with open(template_path, 'w') as f:
                     yaml.dump(resource_data, f, width=float("inf"))
                 logging.info(f"Succesfully updated the namespace for resource: {resource_name}")
