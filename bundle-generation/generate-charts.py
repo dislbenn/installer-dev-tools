@@ -619,11 +619,11 @@ def updateHelmResources(chartName, helmChart, exclusions, inclusions, branch):
 
                 else:
                     resource_data['metadata']['namespace'] = f"{{{{ default \"{current_namespace}\" .Values.global.namespace }}}}"
-                    logging.info(f"namespace: {resource_data['metadata']['namespace']}")
                     logging.info(f"Namespace for {resource_name} set to: {current_namespace} (Helm default used).")
 
                 with open(template_path, 'w') as f:
                     yaml.dump(resource_data, f, width=float("inf"))
+                    logging.info(f"resource_data {resource_data}")
                 logging.info(f"Succesfully updated the namespace for resource: {resource_name}")
             except Exception as e:
                 logging.error(f"Error processing template '{template_path}': {e}")
