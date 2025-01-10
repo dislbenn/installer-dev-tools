@@ -592,7 +592,7 @@ def updateHelmResources(chartName, helmChart, exclusions, inclusions, branch):
     logging.info(f"Updating resources chart: {chartName}")
 
     resource_kinds = [
-        "ConfigMap", "NetworkPolicy", "PersistentVolumeClaim", "Route",
+        "ClusterRole", "ConfigMap", "Deployment", "NetworkPolicy", "PersistentVolumeClaim", "Route", "Role",
         "Secret", "Service", "StatefulSet"
     ]
 
