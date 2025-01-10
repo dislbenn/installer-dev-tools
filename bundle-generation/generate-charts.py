@@ -592,8 +592,14 @@ def updateHelmResources(chartName, helmChart, exclusions, inclusions, branch):
     logging.info(f"Updating resources chart: {chartName}")
 
     resource_kinds = [
-        "ClusterRole", "ConfigMap", "Deployment", "NetworkPolicy", "PersistentVolumeClaim",
-        "RoleBinding", "Route", "Role", "Secret", "Service", "StatefulSet"
+        "ClusterRole", "ClusterRoleBinding" "ConfigMap", "Deployment", "MutatingWebhookConfiguration",
+        "NetworkPolicy", "PersistentVolumeClaim", "RoleBinding", "Role", "Route", "Secret", "Service", "StatefulSet",
+        "ValidatingWebhookConfiguration"
+    ]
+    
+    namespace_scoped_kinds = [
+        "ConfigMap", "Deployment", "NetworkPolicy", "PersistentVolumeClaim", "RoleBinding", "Role", "Route",
+        "Secret", "Service", "StatefulSet"
     ]
 
     for kind in resource_kinds:
@@ -611,22 +617,38 @@ def updateHelmResources(chartName, helmChart, exclusions, inclusions, branch):
                     resource_name = resource_data['metadata'].get('name', 'unknown')
                     logging.info(f"Processing resource: {resource_name} from template: {template_path}")
 
-                current_namespace = resource_data['metadata'].get('namespace', None)
-                if current_namespace is None:
-                    # If no namespace is found, use the default Helm namespace
-                    resource_data['metadata']['namespace'] = """{{ .Values.global.namespace }}"""
-                    logging.info(f"Namespace not set for {resource_name}. Using default '{{ .Values.global.namespace }}'.")
+                # Not all resources are namespace-scoped, so we initialize target_namespace as None initially.
+                target_namespace = None
 
-                else:
-                    resource_data['metadata']['namespace'] = f"{{{{ default \"{current_namespace}\" .Values.global.namespace }}}}"
-                    logging.info(f"Namespace for {resource_name} set to: {current_namespace} (Helm default used).")
+                if kind in namespace_scoped_kinds:
+                    current_namespace = resource_data['metadata'].get('namespace', None)
+                    if current_namespace is None:
+                        # If no namespace is found, use the default Helm namespace
+                        resource_data['metadata']['namespace'] = """{{ .Values.global.namespace }}"""
+                        logging.info(f"Namespace not set for {resource_name}. Using default '{{ .Values.global.namespace }}'.")
 
-                target_namespace = resource_data['metadata']['namespace']
-                    
+                    else:
+                        resource_data['metadata']['namespace'] = f"{{{{ default \"{current_namespace}\" .Values.global.namespace }}}}"
+                        logging.info(f"Namespace for {resource_name} set to: {current_namespace} (Helm default used).")
+                    target_namespace = resource_data['metadata']['namespace']
+
+                # If no namespace was set and it's not a namespace-scoped resource, use the default Helm namespace
+                if target_namespace is None:
+                    target_namespace = """{{ .Values.global.namespace }}"""
+                
                 if kind == "ClusterRoleBinding" or kind == "RoleBinding":
                     if 'subjects' in resource_data:
                         for subject in resource_data['subjects']:
                             subject['namespace'] = target_namespace
+                    
+                if kind == "MutatingWebhookConfiguration" or kind == "ValidatingWebhookConfiguration":
+                    if 'webhooks' in resource_data:
+                        for webhook in resource_data['webhooks']:
+                            if 'clientConfig' in webhook:
+                                client_config = webhook['clientConfig']
+                                if 'service' in client_config:
+                                    service = client_config['service']
+                                    service['namespace'] = target_namespace
 
                 with open(template_path, 'w') as f:
                     yaml.dump(resource_data, f, width=float("inf"))
