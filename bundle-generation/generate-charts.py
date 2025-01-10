@@ -600,7 +600,7 @@ def updateHelmResources(chartName, helmChart, exclusions, inclusions, branch):
         resource_templates = findTemplatesOfType(helmChart, kind)
 
         if not resource_templates:
-            logging.info(f"No {kind} templates found in the Helm chart. [Skipping]")
+            logging.warning(f"No {kind} templates found in the Helm chart. [Skipping]")
         else:
             logging.info(f"Found {len(resource_templates)} {kind} templates. Beginning processing...")
 
