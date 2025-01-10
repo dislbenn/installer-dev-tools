@@ -618,28 +618,34 @@ def updateHelmResources(chartName, helmChart, exclusions, inclusions, branch):
                     logging.info(f"Processing resource: {resource_name} from template: {template_path}")
 
                 # Not all resources are namespace-scoped, so we initialize target_namespace as None initially.
-                target_namespace = None
+                target_namespace = """{{ .Values.global.namespace }}"""
 
                 if kind in namespace_scoped_kinds:
                     current_namespace = resource_data['metadata'].get('namespace', None)
                     if current_namespace is None:
                         # If no namespace is found, use the default Helm namespace
-                        resource_data['metadata']['namespace'] = """{{ .Values.global.namespace }}"""
+                        resource_data['metadata']['namespace'] = target_namespace
                         logging.info(f"Namespace not set for {resource_name}. Using default '{{ .Values.global.namespace }}'.")
 
                     else:
-                        resource_data['metadata']['namespace'] = f"{{{{ default \"{current_namespace}\" .Values.global.namespace }}}}"
-                        logging.info(f"Namespace for {resource_name} set to: {current_namespace} (Helm default used).")
-                    target_namespace = resource_data['metadata']['namespace']
-
-                # If no namespace was set and it's not a namespace-scoped resource, use the default Helm namespace
-                if target_namespace is None:
-                    target_namespace = """{{ .Values.global.namespace }}"""
+                        # Update target_namespace to reflect the current_namespace
+                        target_namespace = f"{{{{ default \"{current_namespace}\" .Values.global.namespace }}}}"
+                        resource_data['metadata']['namespace'] = target_namespace
+                        logging.info(f"Namespace for {resource_name} set to: {target_namespace} (Helm default used).")
                 
                 if kind == "ClusterRoleBinding" or kind == "RoleBinding":
                     if 'subjects' in resource_data:
                         for subject in resource_data['subjects']:
-                            subject['namespace'] = target_namespace
+                            subject_namespace = subject.get('namespace', None)
+                            if subject_namespace is None:
+                                # If no namespace is found, use the default Helm namespace
+                                subject['namespace'] = target_namespace
+
+                            else:
+                                # Update target_namespace to reflect the subject_namespace
+                                target_namespace = f"{{{{ default \"{subject_namespace}\" .Values.global.namespace }}}}"
+                                subject['namespace'] = target_namespace
+                                logging.info(f"Subject namespace for {resource_name} set to: {subject_namespace} (Helm default used).")
                     
                 if kind == "MutatingWebhookConfiguration" or kind == "ValidatingWebhookConfiguration":
                     if 'webhooks' in resource_data:
@@ -648,7 +654,15 @@ def updateHelmResources(chartName, helmChart, exclusions, inclusions, branch):
                                 client_config = webhook['clientConfig']
                                 if 'service' in client_config:
                                     service = client_config['service']
-                                    service['namespace'] = target_namespace
+                                    service_namespace = service.get('namespace', None)
+                                    if service_namespace is None:
+                                        service['namespace'] = target_namespace
+
+                                    else:
+                                        # Update target_namespace to reflect the service_namespace
+                                        target_namespace = f"{{{{ default \"{service_namespace}\" .Values.global.namespace }}}}"
+                                        subject['namespace'] = target_namespace
+                                        logging.info(f"Subject namespace for {resource_name} set to: {service_namespace} (Helm default used).")
 
                 with open(template_path, 'w') as f:
                     yaml.dump(resource_data, f, width=float("inf"))
