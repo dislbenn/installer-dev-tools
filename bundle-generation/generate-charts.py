@@ -595,6 +595,7 @@ def updateHelmResources(chartName, helmChart, exclusions, inclusions, branch):
     #     deploySpec = yaml.safe_load(f)
     
     templates = findTemplatesOfType(helmChart, 'Configmap')
+    logging.info(f"Found templates {templates}")
     for template in templates:
         with open(template, 'r') as f:
             resource = yaml.safe_load(f)
