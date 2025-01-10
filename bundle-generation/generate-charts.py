@@ -372,6 +372,7 @@ def fixImageReferences(helmChart, imageKeyMapping):
             logging.info("container: %s\n" % container)
 
             image_key = parse_image_ref(container['image'])["repository"]
+            logging.info("image_key: %s\n" % image_key)
             try:
                 image_key = imageKeyMapping[image_key]
             except KeyError:
