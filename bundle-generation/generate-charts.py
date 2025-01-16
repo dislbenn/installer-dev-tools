@@ -620,7 +620,7 @@ def updateHelmResources(chartName, helmChart, exclusions, inclusions, branch):
 
                 if kind in namespace_scoped_kinds:
                     current_namespace = resource_data['metadata'].get('namespace', None)
-                    if current_namespace is None or chartName == 'flight-control':
+                    if current_namespace is None:
                         # If no namespace is found, use the default Helm namespace
                         resource_data['metadata']['namespace'] = target_namespace
                         logging.info(f"Namespace not set for {resource_name}. Using default '{{ .Values.global.namespace }}'.")
