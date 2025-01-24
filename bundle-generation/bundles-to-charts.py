@@ -854,36 +854,35 @@ def getBundleManifestsPath(repo, operator):
     latest_bundle_path = os.path.join(bundles_directory, latest_bundle_version)
     return latest_bundle_path
 
-def getCSVPath(repo, operator):
+def get_csv_path(repo, operator):
     if 'bundlePath' in operator:
-        manifestsPath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "tmp", repo, operator["bundlePath"])
-        if not os.path.exists(manifestsPath):
+        manifests_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "tmp", repo, operator["bundlePath"])
+        if not os.path.exists(manifests_path):
             logging.critical("Could not validate bundlePath at given path: " + operator["bundlePath"])
             exit(1)
         else:
             logging.info("Using specified bundlePath: %s", operator["bundlePath"])
 
     else:
-        bundlePath = getBundleManifestsPath(repo, operator)
-        manifestsPath = os.path.join(bundlePath, "manifests")
-        logging.info("Using bundlePath derived from repository: %s", bundlePath)
+        bundle_path = getBundleManifestsPath(repo, operator)
+        manifests_path = os.path.join(bundle_path, "manifests")
+        logging.info("Using bundlePath derived from repository: %s", bundle_path)
 
-    for filename in os.listdir(manifestsPath):
-        logging.info("Checking manifestPath file: %s", filename)
-
-        if not filename.endswith(".yaml"): 
+    logging.info("Searching for CSV file in directory: %s", manifests_path)
+    for file_name in os.listdir(manifests_path):
+        if not file_name.endswith(".yaml"): 
             continue
 
-        filepath = os.path.join(manifestsPath, filename)
-        with open(filepath, 'r') as f:
-            resourceFile = yaml.safe_load(f)
+        file_path = os.path.join(manifests_path, file_name)
+        with open(file_path, 'r') as f:
+            resource_file = yaml.safe_load(f)
 
-        if "kind" not in resourceFile:
-            continue
-
-        elif resourceFile["kind"] == "ClusterServiceVersion":
-            logging.info("CSV file found: %s", filepath)
-            return filepath
+        if resource_file and resource_file.get("kind") == "ClusterServiceVersion":
+            logging.info("CSV file found: %s", file_path)
+            return file_path
+    
+    logging.warning("No CSV file found in directory: %s", resource_file)
+    return None
 
 # injectAnnotationsForAddonTemplate injects following annotations for deployments in the AddonTemplate:
 # - target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
@@ -1080,7 +1079,7 @@ def main():
             bundlepath = getBundleManifestsPath(repo["repo_name"], operator)
             logging.info("The latest bundle path for channel is %s", bundlepath)
 
-            csvPath = getCSVPath(repo["repo_name"], operator)
+            csvPath = get_csv_path(repo["repo_name"], operator)
             if csvPath == "":
                 # Validate the bundlePath exists in config.yaml
                 logging.error("Unable to find given channel: %s", operator.get("channel", "Channel not specified"))
