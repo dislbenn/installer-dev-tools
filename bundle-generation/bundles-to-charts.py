@@ -739,6 +739,9 @@ def injectRequirements(helmChart, operator, exclusions, sizes, branch):
     # Fixes image references in the Helm chart.
     fixImageReferences(helmChart, imageKeyMapping)
     fixEnvVarImageReferences(helmChart, imageKeyMapping)
+    
+    fixImageReferencesForAddonTemplate(helmChart, imageKeyMapping)
+    injectAnnotationsForAddonTemplate(helmChart)
 
     # Updates RBAC and deployment configuration in the Helm chart.
     updateRBAC(helmChart)
@@ -881,6 +884,87 @@ def getCSVPath(repo, operator):
         elif resourceFile["kind"] == "ClusterServiceVersion":
             logging.info("CSV file found: %s", filepath)
             return filepath
+
+# injectAnnotationsForAddonTemplate injects following annotations for deployments in the AddonTemplate:
+# - target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
+def injectAnnotationsForAddonTemplate(helmChart):
+    logging.info("Injecting Annotations for deployments in the AddonTemplate ...")
+
+    addonTemplates = findTemplatesOfType(helmChart, 'AddOnTemplate')
+    for addonTemplate in addonTemplates:
+        injected = False
+        with open(addonTemplate, 'r') as f:
+            templateContent = yaml.safe_load(f)
+            agentSpec = templateContent['spec']['agentSpec']
+            if 'workload' not in agentSpec:
+                return
+            workload = agentSpec['workload']
+            if 'manifests' not in workload:
+                return
+            manifests = workload['manifests']
+            for manifest in manifests:
+                if manifest['kind'] == 'Deployment':
+                    metadata = manifest['spec']['template']['metadata']
+                    if 'annotations' not in metadata:
+                        metadata['annotations'] = {}
+                    if 'target.workload.openshift.io/management' not in metadata['annotations']:
+                        metadata['annotations']['target.workload.openshift.io/management'] = '{"effect": "PreferredDuringScheduling"}'
+                        injected = True
+        if injected:
+            with open(addonTemplate, 'w') as f:
+                yaml.dump(templateContent, f, width=float("inf"))
+                logging.info("Annotations injected successfully. \n")
+
+# fixImageReferencesForAddonTemplate identify the image references for every deployment in addontemplates, if any exist
+# in the image field, insert helm flow control code to reference it, and add image-key to the values.yaml file.
+# If the image-key referenced in the addon template deployment does not exist in `imageMappings` in the Config.yaml,
+# this will fail. Images must be explicitly defined
+def fixImageReferencesForAddonTemplate(helmChart, imageKeyMapping):
+    logging.info("Fixing image references in addon templates and values.yaml ...")
+
+    addonTemplates = findTemplatesOfType(helmChart, 'AddOnTemplate')
+    imageKeys = []
+    temp = "" ## temporarily read image ref
+    for addonTemplate in addonTemplates:
+        with open(addonTemplate, 'r') as f:
+            templateContent = yaml.safe_load(f)
+            agentSpec = templateContent['spec']['agentSpec']
+            if 'workload' not in agentSpec:
+                return
+            workload = agentSpec['workload']
+            if 'manifests' not in workload:
+                return
+            manifests = workload['manifests']
+            imageKeys = []
+            for manifest in manifests:
+                if manifest['kind'] == 'Deployment':
+                    containers = manifest['spec']['template']['spec']['containers']
+                    for container in containers:
+                        image_key = parse_image_ref(container['image'])["repository"]
+                        try:
+                            image_key = imageKeyMapping[image_key]
+                        except KeyError:
+                            logging.critical("No image key mapping provided for imageKey: %s" % image_key)
+                            exit(1)
+                        imageKeys.append(image_key)
+                        container['image'] = "{{ .Values.global.imageOverrides." + image_key + " }}"
+                        # container['imagePullPolicy'] = "{{ .Values.global.pullPolicy }}"
+        with open(addonTemplate, 'w') as f:
+            yaml.dump(templateContent, f, width=float("inf"))
+            logging.info("AddOnTemplate updated with image override successfully. \n")
+
+    if len(imageKeys) == 0:
+        return
+    valuesYaml = os.path.join(helmChart, "values.yaml")
+    with open(valuesYaml, 'r') as f:
+        values = yaml.safe_load(f)
+    if 'imageOverride' in values['global']['imageOverrides']:
+        del values['global']['imageOverrides']['imageOverride']
+    for imageKey in imageKeys:
+        values['global']['imageOverrides'][imageKey] = "" # set to temp to debug
+    with open(valuesYaml, 'w') as f:
+        yaml.dump(values, f, width=float("inf"))
+    logging.info("Image references and pull policy in addon templates and values.yaml updated successfully.\n")
 
 def main():
     logging.basicConfig(level=logging.INFO)
