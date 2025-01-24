@@ -1085,12 +1085,8 @@ def main():
                 logging.error("Unable to find given channel: %s", operator.get("channel", "Channel not specified"))
                 exit(1)
 
-            if "branch" in repo:
-                branch = repo["branch"]
-            else:
-                branch = ""
+            branch = repo.get("branch", "")
 
-            logging.info("Reading CSV: %s ...",  csvPath)
             # Validate CSV exists
             if not os.path.isfile(csvPath):
                 logging.critical("Unable to find CSV at given path - '%s'.", csvPath)
