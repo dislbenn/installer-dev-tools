@@ -746,29 +746,6 @@ def injectRequirements(helmChart, operator, exclusions, sizes, branch):
 
     logging.info("Updated Chart '%s' successfully\n", helmChart)
 
-def addCMAs(repo, operator, outputDir):
-    if 'bundlePath' in operator:
-        manifestsPath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "tmp", repo, operator["bundlePath"])
-        if not os.path.exists(manifestsPath):
-            logging.critical("Could not validate bundlePath at given path: " + operator["bundlePath"])
-            exit(1)
-    else:
-        bundlePath = getBundleManifestsPath(repo, operator)
-        manifestsPath = os.path.join(bundlePath, "manifests")
-
-    for filename in os.listdir(manifestsPath):
-        if not filename.endswith(".yaml"): 
-            continue
-        filepath = os.path.join(manifestsPath, filename)
-        with open(filepath, 'r') as f:
-            resourceFile = yaml.safe_load(f)
-
-        if "kind" not in resourceFile:
-            continue
-        elif resourceFile["kind"] == "ClusterManagementAddOn":
-            logging.info("CMA")
-            shutil.copyfile(filepath, os.path.join(outputDir, "charts", "toggle", operator['name'], "templates", filename))
-
 def addCRDs(repo, operator, outputDir, preservedFiles=None, overwrite=False):
     """
     Add Custom Resource Definitions (CRDs) to the specified output directory.
@@ -1082,11 +1059,6 @@ def main():
             extract_csv_resources(helmChart, csvPath)
             copy_additional_resources(helmChart, csvPath)
             logging.info("Resources added from CSV successfully.\n")
-
-            # Copy over all ClusterManagementAddons to the destination directory
-            logging.info("Copying ClusterManagementAddons to helm chart '%s' ...", operator["name"])
-            addCMAs(repo["repo_name"], operator, destination)
-            logging.info("ClusterManagementAddons copied successfully.")
 
             if not skipOverrides:
                 logging.info("Adding Overrides to helm chart '%s' (set --skipOverrides=true to skip) ...", operator["name"])
