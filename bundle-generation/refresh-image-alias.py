@@ -85,6 +85,7 @@ def main():
         
     logging.info("Fetching latest manifest from snapshots directory")
     manifest_file_path = fetch_image_alias_json(snapshots_path)
+    logging.info("Manifest file path: %s" % manifest_file_path)
     if not manifest_file_path:
         logging.error("Failed to fetch latest manifest file from snapshots in repository: %s" % args.repo)
         exit(1)
