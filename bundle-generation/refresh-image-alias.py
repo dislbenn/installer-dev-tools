@@ -16,6 +16,9 @@ TARGET_DIR = "configs/images"
 TARGET_FILE = os.path.join(TARGET_DIR, "image-alias.json")
 
 def fetch_image_alias_json(image_path):
+    
+    logging.info(f"image-alias.json {image_path}")
+    
     # Fetch the file from the source repo (assuming the file is in the root of the other repo)
     source_file = os.path.join(image_path, "image-alias.json")
     
@@ -48,20 +51,6 @@ def clone_pipeline_repo(org, repo_name, branch, target_path, pat=None):
 
     repository = Repo.clone_from(clone_url, target_path)
     repository.git.checkout(branch)
-    
-def fetch_latest_manifest(dir_path):
-    """
-    Fetch the latest manifest file from the snapshots directory.
-    
-    Args:
-        dir_path (str): The path to the directory containing manifest files.
-        
-    Returns:
-        str or None: The path to the latest manifest file, or None if no manifest is found.
-    """
-    image_alias = glob.glob(os.path.join(dir_path, "image-alias.json"))
-
-    return image_alias[-1] if image_alias else None
 
 def main():
     logging.basicConfig(level=logging.INFO)
