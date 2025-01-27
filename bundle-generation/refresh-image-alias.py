@@ -12,7 +12,7 @@ import shutil
 
 from git import Repo
 
-TARGET_DIR = "configs/images"
+TARGET_DIR = "config/images"
 TARGET_FILE = os.path.join(TARGET_DIR, "image-alias.json")
 
 def fetch_image_alias_json(image_path):
