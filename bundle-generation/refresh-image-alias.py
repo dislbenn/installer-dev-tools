@@ -87,6 +87,7 @@ def main():
         shutil.rmtree(repo_directory)
     logging.info("Cloning pipeline repository: %s/%s (branch: %s)" % (args.org, args.repo, args.branch))
     clone_pipeline_repo(args.org, args.repo, args.branch, target_path=repo_directory, pat=os.getenv("GH_READ_PAT"))
+    exit(0)
 
     # Fetch latest manifest
     snapshots_path = os.path.join(repo_directory, ".")
