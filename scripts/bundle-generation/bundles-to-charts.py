@@ -1101,6 +1101,7 @@ def main():
                 exit(1)
 
             branch = repo.get("branch", "")
+            escaped_variables = operator.get("escape-template-variables", [])
 
             # Validate CSV exists
             if not os.path.isfile(csvPath):
@@ -1152,7 +1153,7 @@ def main():
             logging.info("Adding Resources from CSV to helm chart '%s' ...", operator["name"])
             extract_csv_resources(helmChart, csvPath)
             copy_additional_resources(helmChart, csvPath)
-            escape_template_variables(helmChart, operator["escape-template-variables"])
+            escape_template_variables(helmChart, escaped_variables)
             logging.info("Resources added from CSV successfully.\n")
 
             if not skipOverrides:
