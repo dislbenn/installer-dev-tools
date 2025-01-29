@@ -291,6 +291,7 @@ def check_unsupported_csv_resources(csv_path, csv_data, supported_config_types):
     return False
 
 def escape_template_variables(helmChart, variables):
+    logging.info(f"variables: {variables}")
     addonTemplates = findTemplatesOfType(helmChart, 'AddOnTemplate')
     for addonTemplate in addonTemplates:
         for variable in variables:
