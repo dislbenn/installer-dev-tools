@@ -256,6 +256,11 @@ def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
             logging.warning("Skipped empty or invalid YAML content during template processing")
             continue
 
+        for content in yamlContent:
+            name = content.get('metadata', {}).get('name', '').lower()
+            logging.info("name: {}".format(name))
+            # Process the name or other fields as needed
+
         logging.info(f"yamlContent: {yamlContent}")
 
         name = yamlContent.get('metadata', {}).get('name', '').lower()
