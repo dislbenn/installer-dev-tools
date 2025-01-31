@@ -255,7 +255,7 @@ def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
     logging.info(f"Running 'helm template' for chart: '{chartName}'")
     helmTemplateOutput = subprocess.getoutput(['helm template ' + chartPath + ' --namespace open-cluster-management'])
 
-    logging.info(f"helm template output {helmTemplateOutput}")
+    # logging.info(f"helm template output {helmTemplateOutput}")
     yamlList = helmTemplateOutput.split('---')
     for outputContent in yamlList:
         yamlContent = yaml.safe_load(outputContent)
@@ -268,7 +268,7 @@ def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
         #     logging.info(f"content: {content}")
             # Process the name or other fields as needed
 
-        logging.info(f"yamlContent: {yamlContent}")
+        # logging.info(f"yamlContent: {yamlContent}")
 
         name = yamlContent.get('metadata', {}).get('name', '').lower()
         kind = yamlContent.get('kind', '').lower()
