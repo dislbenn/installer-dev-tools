@@ -258,7 +258,7 @@ def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
 
         for content in yamlContent:
             name = content.get('metadata', {}).get('name', '').lower()
-            logging.info("name: {}".format(name))
+            logging.info(f"content: {content}")
             # Process the name or other fields as needed
 
         logging.info(f"yamlContent: {yamlContent}")
