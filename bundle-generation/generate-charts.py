@@ -230,6 +230,16 @@ def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
         logging.error(f"Missing Chart.yaml in chart: '{chartName}' at path: {chartYamlPath}")
         return
 
+    with open(chartYamlPath, 'r') as f:
+        chartYaml = yaml.safe_load(f)
+        
+        # Remove dependencies if any
+        if 'dependencies' in chartYaml:
+            del chartYaml['dependencies']
+            
+        logging.info(f"chart yaml path: {chartYaml}")
+        yaml.dump(chartYaml, f, width=float("inf"))
+
     # Update chart version if specified before rendering templates
     if chartVersion != "":
         with open(chartYamlPath, 'r') as f:
