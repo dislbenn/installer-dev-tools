@@ -238,7 +238,8 @@ def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
             del chartYaml['dependencies']
             
         logging.info(f"chart yaml path: {chartYaml}")
-        yaml.dump(chartYaml, f, width=float("inf"))
+        with open(chartYamlPath, 'w') as f:
+            yaml.dump(chartYaml, f, width=float("inf"))
 
     # Update chart version if specified before rendering templates
     if chartVersion != "":
