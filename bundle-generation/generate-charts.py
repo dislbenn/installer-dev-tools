@@ -230,27 +230,10 @@ def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
         logging.error(f"Missing Chart.yaml in chart: '{chartName}' at path: {chartYamlPath}")
         return
 
-    with open(chartYamlPath, 'r') as f:
-        chartYaml = yaml.safe_load(f)
-        
-        # Remove dependencies if any
-        if 'dependencies' in chartYaml:
-            del chartYaml['dependencies']
-            
-        logging.info(f"chart yaml path: {chartYaml}")
-        with open(chartYamlPath, 'w') as f:
-            yaml.dump(chartYaml, f, width=float("inf"))
-
     # Update chart version if specified before rendering templates
     if chartVersion != "":
         with open(chartYamlPath, 'r') as f:
             chartYaml = yaml.safe_load(f)
-            
-        # Remove dependencies if any
-        if 'dependencies' in chartYaml:
-            del chartYaml['dependencies']
-            
-        logging.info(f"chart yaml path: {chartYaml}")
 
         chartYaml['version'] = chartVersion
         with open(chartYamlPath, 'w') as f:
@@ -264,9 +247,9 @@ def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
         logging.warning(f"No specific values.yaml found for chart '{chartName}'")
 
     logging.info(f"Running 'helm template' for chart: '{chartName}'")
-    helmTemplateOutput = subprocess.getoutput(['helm template ' + chartPath + ' --namespace open-cluster-management'])
+    helmTemplateOutput = subprocess.getoutput(['helm template ' + chartPath + ' --namespace open-cluster-management --set global.internalNamespace=default'])
 
-    # logging.info(f"helm template output {helmTemplateOutput}")
+    logging.info(f"helm template output {helmTemplateOutput}")
     yamlList = helmTemplateOutput.split('---')
     for outputContent in yamlList:
         yamlContent = yaml.safe_load(outputContent)
@@ -279,7 +262,7 @@ def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
         #     logging.info(f"content: {content}")
             # Process the name or other fields as needed
 
-        # logging.info(f"yamlContent: {yamlContent}")
+        logging.info(f"yamlContent: {yamlContent}")
 
         name = yamlContent.get('metadata', {}).get('name', '').lower()
         kind = yamlContent.get('kind', '').lower()
