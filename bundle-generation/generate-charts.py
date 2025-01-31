@@ -234,6 +234,11 @@ def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
     if chartVersion != "":
         with open(chartYamlPath, 'r') as f:
             chartYaml = yaml.safe_load(f)
+            
+        # Remove dependencies if any
+        if 'dependencies' in chartYaml:
+            del chartYaml['dependencies']
+
         chartYaml['version'] = chartVersion
         with open(chartYamlPath, 'w') as f:
             yaml.dump(chartYaml, f, width=float("inf"))
