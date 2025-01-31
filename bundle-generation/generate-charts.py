@@ -238,6 +238,8 @@ def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
         # Remove dependencies if any
         if 'dependencies' in chartYaml:
             del chartYaml['dependencies']
+            
+        logging.info(f"chart yaml path: {chartYaml}")
 
         chartYaml['version'] = chartVersion
         with open(chartYamlPath, 'w') as f:
