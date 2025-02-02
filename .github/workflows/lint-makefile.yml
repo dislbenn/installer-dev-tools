@@ -10,20 +10,14 @@ on:
 jobs:
   shellcheck:
     name: Run Checkmake on Updated Makefiles
-    runs-on: macos-latest
+    runs-on: macos-latest  # Change to macOS runner
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Install Homebrew
-        run: |
-          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-          echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> $GITHUB_ENV
-          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-
       - name: Install Checkmake
-        run: brew install checkmake
+        run: brew install checkmake  # Brew is already installed on macOS runners
 
       - name: Find Modified Makefiles
         id: changed-files
@@ -34,7 +28,12 @@ jobs:
       - name: Run Checkmake
         if: steps.changed-files.outputs.any_changed == 'true'
         run: |
+          IFS=' '  # Set IFS to space to split the list correctly
           for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
               echo "🔍 Running checkmake on $file..."
               checkmake "$file" || { echo "❌ checkmake found issues. Please fix them."; exit 1; }
           done
+
+
+
+          
