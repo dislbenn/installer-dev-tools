@@ -37,9 +37,9 @@ jobs:
           IFS=' '  # Set IFS to space to split the list correctly
           for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
               echo "🔍 Running ShellCheck on $file..."
-              shellcheck "$file" || true  # Continue even if ShellCheck fails
+              shellcheck "$file"
           done
-    
+        
       - name: Run shfmt and Check for Formatting Issues
         continue-on-error: true # Allow continuing even if shfmt fails
         if: steps.changed-files.outputs.any_changed == 'true'
@@ -50,9 +50,9 @@ jobs:
               # Check for formatting issues
               shfmt -d "$file" || { 
                 echo "❌ shfmt detected formatting issues in $file. Please run 'shfmt -w $file' locally."; 
-                true;  # Continue even if shfmt fails
+                exit 1; 
               }
-          done        
+          done
 
         # This step will only run if any previous step failed
       - name: Fail Job if There Were Errors
