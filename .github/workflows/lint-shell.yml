@@ -27,16 +27,23 @@ jobs:
 
       - name: Run ShellCheck
         if: steps.changed-files.outputs.any_changed == 'true'
-        run:
+        run: |
+          IFS=' '  # Set IFS to space to split the list correctly
           for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
               echo "🔍 Running ShellCheck on $file..."
               shellcheck "$file"
           done
-
+        
       - name: Run shfmt and Check for Formatting Issues
         if: steps.changed-files.outputs.any_changed == 'true'
-        run:
+        run: |
+          IFS=' '  # Set IFS to space to split the list correctly
           for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
               echo "🔍 Running shfmt on $file..."
-              shfmt -d "$file" || { echo "❌ shfmt detected formatting issues in $file. Please run 'shfmt -w $file' locally."; exit 1; }
+              # Check for formatting issues
+              shfmt -d "$file" || { 
+                echo "❌ shfmt detected formatting issues in $file. Please run 'shfmt -w $file' locally."; 
+                exit 1; 
+              }
           done
+
