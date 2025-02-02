@@ -32,3 +32,5 @@ jobs:
               echo "🔍 Running checkmake on $file..."
               checkmake "$file" || { echo "❌ checkmake found issues. Please fix them."; exit 1; }
           done
+
+          
