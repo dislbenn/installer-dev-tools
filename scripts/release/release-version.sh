@@ -79,3 +79,4 @@ compare_versions() {
 
 clear_version_match_file
 scan_components
+

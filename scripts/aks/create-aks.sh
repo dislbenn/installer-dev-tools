@@ -32,3 +32,4 @@ az group create --name $RESOURCE_GROUP --location $REGION
 az aks create --resource-group "${RESOURCE_GROUP}" --name "${CLUSTER_NAME}" --enable-oidc-issuer --generate-ssh-keys
 az aks get-credentials --resource-group "${RESOURCE_GROUP}" --name "${CLUSTER_NAME}"
 operator-sdk olm install
+

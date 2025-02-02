@@ -27,3 +27,4 @@ fi
 
 az login
 az aks delete --name $CLUSTER_NAME --resource-group $RESOURCE_GROUP
+
