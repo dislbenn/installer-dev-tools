@@ -2,7 +2,7 @@
 
 ORG ?= stolostronw
 REPO ?= installer-dev-tools
-BRANCH ?= main
+BRANCH ?= mainas
 
 PIPELINE_REPO ?= pipeline
 PIPELINE_BRANCH ?= 2.12-integration
