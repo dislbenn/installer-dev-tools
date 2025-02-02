@@ -10,7 +10,7 @@ on:
 jobs:
   shellcheck:
     name: Run Checkmake on Updated Makefiles
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
 
     steps:
       - name: Checkout Code
