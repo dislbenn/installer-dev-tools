@@ -41,7 +41,6 @@ jobs:
           done
         
       - name: Run shfmt and Check for Formatting Issues
-        continue-on-error: true # Allow continuing even if shfmt fails
         if: steps.changed-files.outputs.any_changed == 'true'
         run: |
           IFS=' '  # Set IFS to space to split the list correctly
