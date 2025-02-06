@@ -42,6 +42,9 @@ import yaml
 from git import Repo
 from validate_csv import *
 
+# Configure logging with coloredlogs
+coloredlogs.install(level='DEBUG')  # Set the logging level as needed
+
 def copy_helm_chart(destination_chart_path, repo, chart):
     """_summary_
 
