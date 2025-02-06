@@ -133,6 +133,7 @@ def add_crds(repo, chart, output_dir):
     destination_path = os.path.join(output_dir, "crds", chart['name'])
     if os.path.exists(destination_path): # If path exists, remove and re-clone
         shutil.rmtree(destination_path)
+
     os.makedirs(destination_path)
     for filename in os.listdir(crd_path):
         if not filename.endswith(".yaml"):
@@ -143,21 +144,6 @@ def add_crds(repo, chart, output_dir):
 
         if resource_file["kind"] == "CustomResourceDefinition":
             shutil.copyfile(file_path, os.path.join(destination_path, filename))
-
-def is_chart_config_acceptable(chart):
-    """_summary_
-
-    Args:
-        chart (_type_): _description_
-
-    Returns:
-        _type_: _description_
-    """
-    helm_chart = chart.get("name")
-    if helm_chart == "":
-        logging.critical("Unable to generate helm chart without a name.")
-        return False
-    return True
 
 def main():
     """_summary_
@@ -223,8 +209,9 @@ def main():
         for chart in repo["charts"]:
             chart_name = chart.get("name")
 
-            if not is_chart_config_acceptable(chart):
-                logging.critical("Unable to generate helm chart without configuration requirements")
+            if not chart_name:
+                logging.critical(
+                    "Helm chart configuration is missing a 'name' field. Aborting chart generation.")
                 sys.exit(1)
 
             logging.info("Helm Chartifying - %s!\n", chart_name)
