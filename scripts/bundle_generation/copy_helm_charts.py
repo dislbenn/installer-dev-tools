@@ -194,7 +194,7 @@ def main():
 
     # Loop through each repo in the config.yaml
     for repo in config:
-        repo_name, repo_github_ref = repo.get("name"), repo.get("github_ref")
+        repo_name, repo_github_ref = repo.get("repo_name"), repo.get("github_ref")
 
         if not repo_name or not repo_github_ref:
             logging.warning(
