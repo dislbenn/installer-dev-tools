@@ -36,6 +36,7 @@ import os
 import shutil
 import sys
 
+import coloredlogs
 import yaml
 
 from git import Repo
