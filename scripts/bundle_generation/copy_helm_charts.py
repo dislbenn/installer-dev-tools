@@ -167,68 +167,86 @@ def main():
         required=False, help="Destination directory of the created helm chart")
 
     args = parser.parse_args()
-    destination = args.destination
 
     # Config.yaml holds the configurations for Operator bundle locations to be used
     script_dir = os.path.dirname(os.path.realpath(__file__))
-    copy_config_yaml_file_path = os.path.join(script_dir, "copy-config.yaml")
-    
-    logging.info("script_dir: %s", script_dir)
-    logging.info("copy_config_yaml_file_path: %s", copy_config_yaml_file_path)
-    exit(0)
+    copy_config_file_path = os.path.join(script_dir, "copy-config.yaml")
 
-    config_yaml = os.path.join(os.path.dirname(os.path.realpath(__file__)), "copy-config.yaml")
-    with open(config_yaml, 'r', encoding="utf-8") as file:
-        config = yaml.safe_load(file)
+    # Check if the configuation file exists
+    if os.path.exists(copy_config_file_path):
+        logging.info("Loading configuration from: %s", copy_config_file_path)
+        try:
+            with open(copy_config_file_path, 'r', encoding="utf-8") as file:
+                config = yaml.safe_load(file)
+                logging.info("Configuration loaded successfully")
+
+        except FileNotFoundError as err:
+            logging.error("Configuration file not found: %s", err, exc_info=True)
+            sys.exit(1)
+
+        except yaml.YAMLError as err:
+            logging.error("Error parsing the YAML configuration file: %s", err, exc_info=True)
+            sys.exit(1)
+
+    else:
+        logging.warning("Configuration file not found: %s", copy_config_file_path)
+        sys.exit(1)
 
     # Loop through each repo in the config.yaml
     for repo in config:
-        logging.info("Cloning: %s", repo["repo_name"])
-        repo_path = os.path.join(
-            os.path.dirname(os.path.realpath(__file__)),
-            "tmp/" + repo["repo_name"]
-        ) # Path to clone repo to
+        repo_name, repo_github_ref = repo.get("name"), repo.get("github_ref")
 
-        if os.path.exists(repo_path): # If path exists, remove and re-clone
-            shutil.rmtree(repo_path)
+        if not repo_name or not repo_github_ref:
+            logging.warning(
+                "Skipping entry due to missing 'name' or 'github_ref' field in configuration")
+            continue
 
-        repository = Repo.clone_from(repo["github_ref"], repo_path) # Clone repo to above path
+        # Define path to clone repository
+        tmp_repo_path = os.path.join(script_dir, "tmp", repo_name)
+        logging.debug("Repository will be cloned to: %s", tmp_repo_path)
+
+        # If path exists, remove and re-clone
+        if os.path.exists(tmp_repo_path):
+            logging.warning(
+                "Repository already exists at '%s'. Deleting to re-clone.", tmp_repo_path)
+            shutil.rmtree(tmp_repo_path)
+
+        repository = Repo.clone_from(repo_github_ref, tmp_repo_path) # Clone repo to above path
         if 'branch' in repo:
             repository.git.checkout(repo['branch']) # If a branch is specified, checkout that branch
 
         # Loop through each operator in the repo identified by the config
         for chart in repo["charts"]:
+            chart_name = chart.get("name")
+
             if not is_chart_config_acceptable(chart):
-                logging.critical(
-                    "Unable to generate helm chart without configuration requirements."
-                )
+                logging.critical("Unable to generate helm chart without configuration requirements")
                 sys.exit(1)
 
-            logging.info("Helm Chartifying -  %s!\n", chart["name"])
+            logging.info("Helm Chartifying - %s!\n", chart_name)
 
-            logging.info("Adding CRDs -  %s!\n", chart["name"])
             # Copy over all CRDs to the destination directory
-            add_crds(repo["repo_name"], chart, destination)
+            logging.info("Copying CRDs for chart '%s'...", chart_name)
+            add_crds(repo_name, chart, args.destination)
 
-            logging.info("Creating helm chart: '%s' ...", chart["name"])
-
+            # Creating Helm chart
+            logging.info("Creating Helm chart: '%s'...", chart_name)
             always_or_toggle = chart['always-or-toggle']
-            destination_chart_path = os.path.join(
-                destination, "charts", always_or_toggle, chart['name'])
+            destination_chart_path = os.path.join(args.destination, "charts", always_or_toggle, chart_name)
 
-            # Template Helm Chart Directory from 'chart-templates'
-            logging.info("Templating helm chart '%s' ...", chart["name"])
-            copy_helm_chart(destination_chart_path, repo["repo_name"], chart)
+            # Template Helm Chart Directory
+            logging.info("Templating helm chart '%s'...", chart_name)
+            copy_helm_chart(destination_chart_path, repo_name, chart)
 
-    logging.info("All repositories and operators processed successfully.")
-    logging.info("Performing cleanup...")
-    shutil.rmtree(
-        (os.path.join(os.path.dirname(os.path.realpath(__file__)), "tmp")),
-        ignore_errors=True
-    )
+    logging.info("All repositories and operators processed successfully")
 
-    logging.info("Cleanup completed.")
-    logging.info("Script execution completed.")
+    # Perform cleanup
+    logging.info("Starting cleanup process...")
+    tmp_dir = os.path.join(script_dir, "tmp")
+    shutil.rmtree(tmp_dir, ignore_errors=True)
+    logging.info("Cleanup completed. Temporary files removed from '%s'", tmp_dir)
+
+    logging.info("Script execution completed successfully")
 
 if __name__ == "__main__":
     main()
