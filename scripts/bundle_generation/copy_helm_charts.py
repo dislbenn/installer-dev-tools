@@ -236,7 +236,8 @@ def main():
             # Creating Helm chart
             logging.info("Creating Helm chart: '%s'...", chart_name)
             always_or_toggle = chart['always-or-toggle']
-            destination_chart_path = os.path.join(args.destination, "charts", always_or_toggle, chart_name)
+            destination_chart_path = os.path.join(
+                args.destination, "charts",always_or_toggle, chart_name)
 
             # Template Helm Chart Directory
             logging.info("Templating helm chart '%s'...", chart_name)
@@ -245,10 +246,12 @@ def main():
     logging.info("All repositories and operators processed successfully")
 
     # Perform cleanup
+    logging.info("----------------------------------------------------------------")
     logging.info("Starting cleanup process...")
     tmp_dir = os.path.join(script_dir, "tmp")
     shutil.rmtree(tmp_dir, ignore_errors=True)
     logging.info("Cleanup completed. Temporary files removed from '%s'", tmp_dir)
+    logging.info("----------------------------------------------------------------")
 
     logging.info("Script execution completed successfully")
 
