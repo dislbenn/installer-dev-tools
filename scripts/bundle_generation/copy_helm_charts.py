@@ -171,8 +171,12 @@ def main():
 
     # Config.yaml holds the configurations for Operator bundle locations to be used
     script_dir = os.path.dirname(os.path.realpath(__file__))
+    copy_config_yaml_file_path = os.path.join(script_dir, "copy-config.yaml")
+    
     logging.info("script_dir: %s", script_dir)
+    logging.info("copy_config_yaml_file_path: %s", copy_config_yaml_file_path)
     exit(0)
+
     config_yaml = os.path.join(os.path.dirname(os.path.realpath(__file__)), "copy-config.yaml")
     with open(config_yaml, 'r', encoding="utf-8") as file:
         config = yaml.safe_load(file)
