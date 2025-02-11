@@ -157,9 +157,5 @@ if __name__ == "__main__":
         print("Invalid choice. Please enter 'olm' or 'helm'.")
         exit(1)
 
-    config_file = (
-        "hack/bundle-automation/config.yaml"
-        if onboarding_type == "olm"
-        else "hack/bundle-automation/charts-config.yaml"
-    )
+    config_file = "onboard-request.yaml"
     onboarding_new_component(config_file, onboarding_type)
