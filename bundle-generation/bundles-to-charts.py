@@ -397,8 +397,8 @@ def extract_csv_resources(helm_chart, csv_path, ignore_webhook_definitions=True)
     process_csv_section(csv_data, "permissions", addNamespaceScopedRBAC, helm_chart)
 
     # Process webhookdefinitions
-    if not ignore_webhook_definitions:
-        process_csv_webhook_section(csv_data, "webhookdefinitions", add_webhook_configuration, helm_chart)
+    # if not ignore_webhook_definitions:
+    #     process_csv_webhook_section(csv_data, "webhookdefinitions", add_webhook_configuration, helm_chart)
 
     logging.info("Resources have been successfully added to chart '%s' from CSV '%s'.\n", helm_chart, csv_path)
 
@@ -1187,7 +1187,15 @@ def main():
                     exit(1)
                 logging.info("CSV validated successfully!\n")
                 continue
-
+            
+            additional_files = []
+            for file in operator.get("additional_resource_files", []):
+                additional_files.append(
+                    os.path.join(os.path.dirname(os.path.realpath(__file__)), "tmp", repo, file)
+                )
+                
+            logging.info("additional_files: %s" % str(additional_files))
+            
             # Get preserved files from config or set default value
             preservedFiles = operator.get("preserve_files", [])
 
