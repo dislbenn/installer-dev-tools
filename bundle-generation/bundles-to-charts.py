@@ -1191,9 +1191,9 @@ def main():
             additional_files = []
             for file in operator.get("additional_resource_files", []):
                 additional_files.append(
-                    os.path.join(os.path.dirname(os.path.realpath(__file__)), "tmp", repo, file)
+                    os.path.join(os.path.dirname(os.path.realpath(__file__)), "tmp", operator, file)
                 )
-                
+
             logging.info("additional_files: %s" % str(additional_files))
             
             # Get preserved files from config or set default value
