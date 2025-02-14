@@ -269,7 +269,24 @@ def addNamespaceScopedRBAC(helmChart, rbacMap):
     logging.info("Rolebinding '%s-rolebinding.yaml' updated successfully.", name)
     logging.info("Namespace scoped RBAC created.\n")
 
-def add_webhook_configuration(helm_chart, webhook_map):
+def find_webhook_service_name(helm_chart):
+    """Searches for a service with the webhook annotation in an OLM bundle."""
+    for root, _, files in os.walk(helm_chart):
+        for file in files:
+            if file.endswith(".yaml") or file.endswith(".yml"):
+                file_path = os.path.join(root, file)
+                with open(file_path, 'r') as f:
+                    try:
+                        yaml_data = yaml.safe_load(f)
+                        if isinstance(yaml_data, dict) and yaml_data.get("kind") == "Service":
+                            annotations = yaml_data.get("metadata", {}).get("annotations", {})
+                            if "service.beta.openshift.io/serving-cert-secret-name" in annotations:
+                                return yaml_data["metadata"]["name"]
+                    except Exception as e:
+                        logging.warning("Skipping invalid YAML: %s (%s)", file_path, e)
+    return None
+
+def add_webhook_configuration(helm_chart, webhook_map, webhook_service_name):
     """Generates a Validating or Mutating WebhookConfiguration based on webhook_map."""
     
     deployment_name = webhook_map.get("deploymentName")
@@ -299,6 +316,7 @@ def add_webhook_configuration(helm_chart, webhook_map):
 
     # Ensure 'metadata.name' is set
     webhook_config["metadata"]["name"] = name
+    webhook_config["metadata"]["annotations"]["service.beta.openshift.io/inject-cabundle"] = "true"
 
     # Prepare webhook entry
     webhook_entry = {
@@ -337,8 +355,9 @@ def process_csv_section(csv_data, section, handler_func, helm_chart):
 def process_csv_webhook_section(csv_data, section, handler_func, helm_chart):
     section_data = csv_data.get('spec', {}).get(section)
     if section_data:
+        webhook_service_name = find_webhook_service_name(helm_chart)
         for item in section_data:
-            handler_func(helm_chart, item)
+            handler_func(helm_chart, item, webhook_service_name)
 
 def check_unsupported_csv_resources(csv_path, csv_data, supported_config_types):
     """Check if there are unsupported resource types in the CSV."""
