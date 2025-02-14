@@ -475,6 +475,26 @@ def copy_additional_resources(helmChart, csvPath):
             ", ".join(set(unsupported_resources)))  # Use `set` to avoid duplicates
         sys.exit(1)
 
+# Copies additional resources from the CSV directory to the Helm chart
+def copy_additional_files(helmChart, additional_file_paths):
+    logging.info("Copying additional resources from the bundle manifests if present ...")
+    
+    template_dir = helm
+
+    for filename in additional_file_paths:
+        if not filename.exists():
+            logging.warning("Skipping file '%s' as it does not exist.", filename)
+            continue
+
+        if filename.endswith(".yaml") or filename.endswith(".yml"):
+            try:
+                dest_path = os.join(helmChart, filename)
+                logging.info("destination path: %s" % dest_path)
+
+            except Exception as e:
+                logging.error("Unexpected error occured while processing file '%s': %s", filePath, e)
+                continue
+
 # Given a resource Kind, return all filepaths of that resource type in a chart directory
 def findTemplatesOfType(helmChart, kind):
     resources = []
@@ -1233,9 +1253,7 @@ def main():
             logging.info("Adding Resources from CSV to helm chart '%s' ...", operator["name"])
             extract_csv_resources(helmChart, csvPath, ignore_webhook_definitions)
             copy_additional_resources(helmChart, csvPath)
-            
-            for f in additional_files:
-                copy_additional_resources(helmChart, f)
+            copy_additional_files(helmChart, additional_files)
 
             escape_template_variables(helmChart, escaped_variables)
             logging.info("Resources added from CSV successfully.\n")
