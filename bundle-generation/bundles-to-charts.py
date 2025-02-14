@@ -478,8 +478,6 @@ def copy_additional_resources(helmChart, csvPath):
 # Copies additional resources from the CSV directory to the Helm chart
 def copy_additional_files(helmChart, additional_file_paths):
     logging.info("Copying additional resources from the bundle manifests if present ...")
-    
-    template_dir = helm
 
     for filename in additional_file_paths:
         if not filename.exists():
@@ -492,7 +490,7 @@ def copy_additional_files(helmChart, additional_file_paths):
                 logging.info("destination path: %s" % dest_path)
 
             except Exception as e:
-                logging.error("Unexpected error occured while processing file '%s': %s", filePath, e)
+                logging.error("Unexpected error occured while processing file '%s': %s", dest_path, e)
                 continue
 
 # Given a resource Kind, return all filepaths of that resource type in a chart directory
