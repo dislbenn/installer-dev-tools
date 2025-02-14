@@ -316,6 +316,11 @@ def add_webhook_configuration(helm_chart, webhook_map, webhook_service_name):
 
     # Ensure 'metadata.name' is set
     webhook_config["metadata"]["name"] = name
+    
+    if "annotations" not in webhook_config["metadata"]:
+        webhook_config["metadata"]["annotations"] = {}
+
+    # Add the OpenShift CA injection annotation
     webhook_config["metadata"]["annotations"]["service.beta.openshift.io/inject-cabundle"] = "true"
 
     # Prepare webhook entry
