@@ -324,7 +324,7 @@ def add_webhook_configuration(helm_chart, webhook_map, webhook_service_name):
         "admissionReviewVersions": webhook_map.get("admissionReviewVersions", ["v1"]),
         "clientConfig": {
             "service": {
-                "name": "webhook-service",
+                "name": webhook_service_name or "webhook-service",
                 "namespace": """{{ .Values.global.namespace }}""",
                 "path": webhook_map.get("webhookPath")
             },
