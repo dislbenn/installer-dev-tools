@@ -271,6 +271,7 @@ def addNamespaceScopedRBAC(helmChart, rbacMap):
 
 def find_webhook_service_name(helm_chart):
     """Searches for a service with the webhook annotation in an OLM bundle."""
+    logging.info("helm_chart: %s",helm_chart)
     for root, _, files in os.walk(helm_chart):
         for file in files:
             if file.endswith(".yaml") or file.endswith(".yml"):
