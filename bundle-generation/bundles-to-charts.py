@@ -274,6 +274,7 @@ def find_webhook_service_name(helm_chart):
     for root, _, files in os.walk(helm_chart):
         for file in files:
             if file.endswith(".yaml") or file.endswith(".yml"):
+                logging.info(f"file {file}")
                 file_path = os.path.join(root, file)
                 with open(file_path, 'r') as f:
                     try:
@@ -336,8 +337,9 @@ def add_webhook_configuration(helm_chart, webhook_map, webhook_service_name):
         },
         "failurePolicy": webhook_map.get("failurePolicy", "Fail"),
         "matchPolicy": webhook_map.get("matchPolicy", "Equivalent"),
+        "rules": webhook_map.get("rules", []),
         "sideEffects": webhook_map.get("sideEffects", "None"),
-        "rules": webhook_map.get("rules", [])
+        "timeoutSeconds": 10
     }
 
     # Append the new webhook entry
