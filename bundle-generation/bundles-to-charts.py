@@ -1191,7 +1191,7 @@ def main():
             additional_files = []
             for file in operator.get("additional_resource_files", []):
                 additional_files.append(
-                    os.path.join(os.path.dirname(os.path.realpath(__file__)), "tmp", operator, file)
+                    os.path.join(os.path.dirname(os.path.realpath(__file__)), "tmp", operator["name"], file)
                 )
 
             logging.info("additional_files: %s" % str(additional_files))
