@@ -1233,6 +1233,10 @@ def main():
             logging.info("Adding Resources from CSV to helm chart '%s' ...", operator["name"])
             extract_csv_resources(helmChart, csvPath, ignore_webhook_definitions)
             copy_additional_resources(helmChart, csvPath)
+            
+            for f in additional_files:
+                copy_additional_resources(helmChart, f)
+
             escape_template_variables(helmChart, escaped_variables)
             logging.info("Resources added from CSV successfully.\n")
 
