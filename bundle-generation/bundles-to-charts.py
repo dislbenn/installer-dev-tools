@@ -28,6 +28,9 @@ from validate_csv import *
 # Configure logging with coloredlogs
 coloredlogs.install(level='DEBUG')  # Set the logging level as needed
 
+# Config Constants
+SCRIPT_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)))
+
 # Split a string at a specified delimiter.  If delimiter doesn't exist, consider the
 # string to be all "left-part" (before delimiter) or "right-part" as requested.
 def split_at(the_str, the_delim, favor_right=True):
@@ -1256,16 +1259,17 @@ def main():
         sys.exit(1)
 
     # Config.yaml holds the configurations for Operator bundle locations to be used
-    configYaml = os.path.join(os.path.dirname(os.path.realpath(__file__)),"config.yaml")
-    with open(configYaml, 'r') as f:
+    config_yaml = os.path.join(os.path.dirname(os.path.realpath(__file__)),"config.yaml")
+    with open(config_yaml, 'r') as f:
         config = yaml.safe_load(f)
+
+    sys.exit(1)
 
     # Loop through each repo in the config.yaml
     for repo in config:
-        csvPath = ""
         # We support two ways of getting bundle input:
 
-        # - Pikcing up already generated input from a Github repo
+        # - Picking up already generated input from a Github repo
         #
         #   Entries for this approach include a "github_ref" property specifying the
         #   Git repo we clone.  Such a repo can supply input for multiple operators
@@ -1282,37 +1286,45 @@ def main():
         #   We assume the bundle-gen tool knows which repos and such it needs to use
         #   to do its job, but needs to be told a branch-name or Git SHA to use
         #   to obtain bundle input info.
+        
+        csv_path = ""
+        repo_name = repo.get("repo_name")
 
         if "github_ref" in repo:
-            logging.info("Cloning: %s", repo["repo_name"])
+            logging.info("Cloning: %s", repo_name)
+
             repo_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "tmp/" + repo["repo_name"]) # Path to clone repo to
             if os.path.exists(repo_path): # If path exists, remove and re-clone
+                logging.warning("Repo path already exist, removing", repo_path)
                 shutil.rmtree(repo_path)
+
             repository = Repo.clone_from(repo["github_ref"], repo_path) # Clone repo to above path
             if 'branch' in repo:
                 repository.git.checkout(repo['branch']) # If a branch is specified, checkout that branch
-            sizesyaml = repo_path + "/bundle/manifests/sizes.yaml"
-            if os.path.isfile(sizesyaml):
-                with open(sizesyaml, 'r') as f:
-                    sizes = yaml.safe_load(f)
-            else:
-                sizes = {}
+
+            # This is only used for hub sizing.
+            # sizesyaml = repo_path + "/bundle/manifests/sizes.yaml"
+            # if os.path.isfile(sizesyaml):
+            #     with open(sizesyaml, 'r') as f:
+            #         sizes = yaml.safe_load(f)
+            # else:
+            #     sizes = {}
 
         elif "gen_command" in repo:
             try:
-                # repo.brnach specifies the branch or SHA the tool should use for input.
+                # repo.branch specifies the branch or SHA the tool should use for input.
                 # repo.bundlePath specifies the directory into which the bundle manifest
 
                 # should be generated, and where they are fetched from for chartifying.
 
-                branch = repo["branch"]
-                sha = repo["sha"]
-                bundlePath = repo["bundlePath"]
+                branch = repo.get("branch")
+                sha = repo.get("sha")
+                bundle_path = repo.get("bundlePath")
 
             except KeyError:
                 logging.critical("branch and bundlePath are required for tool-generated bundles")
                 sys.exit(1)
-            cmd = "%s %s %s %s" % (repo["gen_command"], branch, sha, bundlePath)
+            cmd = "%s %s %s %s" % (repo["gen_command"], branch, sha, bundle_path)
 
             logging.info("Running bundle-gen tool: %s", cmd)
             rc = os.system(cmd)
@@ -1325,10 +1337,10 @@ def main():
             op = {
                "name": repo["name"],
                "imageMappings": repo["imageMappings"],
-               "bundlePath": bundlePath
+               "bundlePath": bundle_path
             }
             repo["operators"] = [op]
-            sizesyaml = bundlePath + "/sizes.yaml"
+            sizesyaml = bundle_path + "/sizes.yaml"
             if os.path.isfile(sizesyaml):
                 with open(sizesyaml, 'r') as f:
                     sizes = yaml.safe_load(f)
