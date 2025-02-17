@@ -1242,9 +1242,15 @@ def main():
 
     ## Initialize ArgParser
     parser = argparse.ArgumentParser()
-    parser.add_argument("--destination", dest="destination", type=str, required=False, help="Destination directory of the created helm chart")
-    parser.add_argument("--skipOverrides", dest="skipOverrides", type=bool, help="If true, overrides such as helm flow control will not be applied")
-    parser.add_argument("--lint", dest="lint", action='store_true', help="If true, bundles will only be linted to ensure they can be transformed successfully. Default is False.")
+    parser.add_argument("--destination", dest="destination", type=str,
+        required=False, help="Destination directory of the created helm chart")
+
+    parser.add_argument("--skipOverrides", dest="skipOverrides", type=bool,
+        help="If true, overrides such as helm flow control will not be applied")
+
+    parser.add_argument("--lint", dest="lint", action='store_true',
+        help="If true, bundles will only be linted to ensure they can be transformed successfully. Default is False.")
+
     parser.set_defaults(skipOverrides=False)
     parser.set_defaults(lint=False)
 
@@ -1253,19 +1259,30 @@ def main():
     skipOverrides = args.skipOverrides
     lint = args.lint
 
-    logging.info("Parsed arguments: destination='%s', skipOverrides=%s, lint=%s",
-                 destination, skipOverrides, lint)
+    logging.debug("Parsed arguments: destination='%s', skipOverrides=%s, lint=%s",
+                destination, skipOverrides, lint)
 
     if lint == False and not destination:
         logging.critical("Destination directory is required when not linting.")
         sys.exit(1)
 
-    # Config.yaml holds the configurations for Operator bundle locations to be used
-    config_yaml = os.path.join(os.path.dirname(os.path.realpath(__file__)),"config.yaml")
-    with open(config_yaml, 'r', encoding='utf-8') as f:
-        config = yaml.safe_load(f)
+    # Load configuration file.
+    # config.yaml contains the configurations for operator bundle locations to be used.
+    config_yaml = os.path.join(SCRIPT_DIR, "config.yaml")
 
-    sys.exit(1)
+    # Check if the configuration file exists.
+    if not os.path.exists(config_yaml):
+        logging.critical("Configuration file '%s' not found. Exiting", config_yaml)
+        sys.exit(1)
+
+    try:
+        with open(config_yaml, 'r', encoding='utf-8') as f:
+            config = yaml.safe_load(f)
+        logging.info("Loaded configuration from '%s'", config_yaml)
+
+    except Exception as e:
+        logging.critical("Unexpected error loading configuration '%s'", config_yaml)
+        sys.exit(1)
 
     # Loop through each repo in the config.yaml
     for repo in config:
