@@ -407,9 +407,9 @@ def extract_csv_resources(helm_chart, csv_path, ignore_webhook_definitions=True)
 
 def print_title(title: str):
     separator = '-' * (len(title) + 10)
-    print(separator)
-    print(f"{title.center(len(separator))}")
-    print(separator)
+    logging.info(separator)
+    logging.info(f"{title.center(len(separator))}")
+    logging.info(separator)
 
 # Copies additional resources from the CSV directory to the Helm chart
 def copy_additional_resources(helmChart, csvPath):

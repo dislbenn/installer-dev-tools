@@ -474,6 +474,12 @@ def copy_additional_resources(helmChart, csvPath):
         logging.error("Found unsupported resources in the bundle manifest: %s. Terminating process.",
             ", ".join(set(unsupported_resources)))  # Use `set` to avoid duplicates
         sys.exit(1)
+        
+def print_title(title: str):
+    separator = '-' * (len(title) + 10)
+    logging.info(separator)
+    logging.info(f"{title.center(len(separator))}")
+    logging.info(separator)
 
 # Copies webhook resources from the target directory to the Helm chart
 def copy_webhook_configuration_manifests(dest_helm_chart_path, webhook_path):
@@ -1244,7 +1250,7 @@ def main():
             extract_csv_resources(helmChart, csvPath, ignore_webhook_definitions)
             copy_additional_resources(helmChart, csvPath)
             
-            logging.info("Adding Webhook Configuration Manifests")
+            print_title("Adding Webhook Configuration Manifests")
             copy_webhook_configuration_manifests(helmChart, webhook_path)
             
             escape_template_variables(helmChart, escaped_variables)
