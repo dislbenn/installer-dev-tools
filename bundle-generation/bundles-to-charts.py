@@ -484,19 +484,19 @@ def print_title(title: str):
 # Copies webhook resources from the target directory to the Helm chart
 def copy_webhook_configuration_manifests(dest_helm_chart_path, webhook_path):
     logging.info("Copying webhook configuration resources from the repo if present ...")
-    
+
     # Check if webhook_path itself is a directory
     if not os.path.exists(webhook_path) or not os.path.isfile(webhook_path):
         logging.warning("Webhook file not found: '%s'. Skipping webhook creation.", webhook_path)
         return
-    
+
+    logging.info("Found webhook configuration file: '%s'", webhook_path)
     with open(webhook_path, 'r') as file:
         content = file.read()
 
     # Split the content by '---' if it's a multi-document YAML file 
     output = content.split('---')
-    logging.info(f"docs {output}")
-    
+
     for i, doc in enumerate(output):
         try:
             # Load the YAML content of the document
@@ -506,15 +506,28 @@ def copy_webhook_configuration_manifests(dest_helm_chart_path, webhook_path):
                 continue
 
             # Extract the kind and name from the resource
-            kind = yaml_content.get('kind', 'UnknownKind')
-            name = yaml_content.get('metadata', {}).get('name', 'UnknownName')
-            
-            logging.info("kind: %s, name: %s" % (kind, name))
-        except Exception as e:
-            logging.warning(f"failure {e}")
+            kind = yaml_content.get('kind')
+            name = yaml_content.get('metadata', {}).get('name')
 
-    logging.info("Found webhook configuration file: '%s'", webhook_path)
-    shutil.copy(webhook_path, os.path.join(dest_helm_chart_path, "templates", os.path.basename(webhook_path)))
+            # if not kind or not name:
+            logging.warning(
+                f"YAML content is missing a kind or name attribute. Skipping resource processing: {yaml_content}")
+            
+            # Generate the new filename based on kind and name
+            new_filename = f"{name.lower()}-{kind.lower()}.yaml"
+
+            # Path to save the new file
+            new_file_path = os.path.join(dest_helm_chart_path, "templates", new_filename)
+
+            # Ensure the templates directory exists
+            os.makedirs(os.path.dirname(new_file_path), exist_ok=True)
+            
+            # Write the YAML content to the new file
+            with open(new_file_path, 'w') as new_file:
+                yaml.dump(yaml_content, new_file, default_flow_style=False, sort_keys=True)
+
+        except Exception as e:
+            logging.warning(f"Unexpected error occurred while processing yaml content: {e}")
 
 # Given a resource Kind, return all filepaths of that resource type in a chart directory
 def findTemplatesOfType(helmChart, kind):
