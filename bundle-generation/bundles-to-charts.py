@@ -482,11 +482,17 @@ def print_title(title: str):
     logging.info(separator)
 
 # Copies webhook resources from the target directory to the Helm chart
-def copy_webhook_configuration_manifests(dest_helm_chart_path, webhook_path):
+def copy_webhook_configuration_manifests(dest_helm_chart_path, webhook_paths):
     logging.info("Copying webhook configuration resources from the repo if present ...")
+    
+    for path in webhook_paths:
+        # Check if webhook_path itself is a directory
+        if not os.path.exists(path) or not os.path.isfile(path):
+            logging.warning("Webhook file not found: '%s'. Skipping webhook creation.", path)
+            continue
 
-    dir_path = os.path.dirname(webhook_path)
-    logging.info("Reading resources from directory: '%s'", dir_path)
+        logging.info("Found webhook configuration file: '%s'", path)
+        shutil.copy(path, os.path.join(dest_helm_chart_path, "templates", os.path.basename(path)))
 
 # Given a resource Kind, return all filepaths of that resource type in a chart directory
 def findTemplatesOfType(helmChart, kind):
