@@ -1254,7 +1254,7 @@ def main():
             copy_additional_resources(helmChart, csvPath)
             
             print_title("Adding Webhook Configuration Manifests")
-            webhook_paths = operator.get("webhook_paths")
+            webhook_paths = operator.get("webhook_paths", [])
             tmp_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "tmp", repo["repo_name"])
 
             for path in webhook_paths:
