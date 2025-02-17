@@ -1258,6 +1258,7 @@ def main():
             tmp_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "tmp", repo["repo_name"])
 
             for path in webhook_paths:
+                logging.info("path: %s", path)
                 copy_webhook_configuration_manifests(helmChart, os.path.join(tmp_dir, path))
             
             escape_template_variables(helmChart, escaped_variables)
