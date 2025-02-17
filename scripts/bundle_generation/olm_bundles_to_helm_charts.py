@@ -273,7 +273,7 @@ def add_webhook_configuration(helm_chart, webhook_map):
     """Generates a Validating or Mutating WebhookConfiguration based on webhook_map."""
     
     deployment_name = webhook_map.get("deploymentName")
-    logging.info("Adding webhook for deployment: %s", deployment_name)
+    print_title(f"Adding webhook for deployment: {deployment_name}")
 
     name = webhook_map.get("generateName")
     if not name:
@@ -404,6 +404,12 @@ def extract_csv_resources(helm_chart, csv_path, ignore_webhook_definitions=True)
 
     if check_unsupported_csv_resources(csv_data, csv_data, supported_csv_install_spec_types):
         exit(1)
+
+def print_title(title: str):
+    separator = '-' * (len(title) + 10)
+    print(separator)
+    print(f"{title.center(len(separator))}")
+    print(separator)
 
 # Copies additional resources from the CSV directory to the Helm chart
 def copy_additional_resources(helmChart, csvPath):
