@@ -872,9 +872,120 @@ def updateRBAC(helmChart):
     logging.info("Clusterroles, roles, clusterrolebindings, and rolebindings updated. \n")
 
 
+def ensure_webhook_namespace(resource_data, resource_name, default_namespace):
+    """
+    Ensures that the namespace for webhooks in a MutatingWebhookConfiguration or 
+    ValidatingWebhookConfiguration is set correctly. Uses Helm templating to 
+    apply a default namespace if none is provided.
+
+    Args:
+        resource_data (dict): The webhook configuration resource data.
+        resource_name (str): The name of the webhook resource.
+        default_namespace (str): The default namespace to use if not set.
+
+    Returns:
+        None: Modifies resource_data in place.
+    """
+    if 'webhooks' not in resource_data:
+        return
+    
+    for webhook in resource_data.get('webhooks', []):
+        client_config = webhook.get('clientConfig', {})
+
+        service = client_config.get('service')
+        if not service:
+            continue
+
+        service_name = service.get('name')
+        service_namespace = service.get('namespace')
+        service_path = service.get('path')
+
+        if service_namespace is None:
+            # Use the default Helm namespace if not specified
+            service_namespace = default_namespace
+
+        else:
+            # Update Helm templating to override existing namespace
+            service_namespace = f"{{{{ default \"{service_namespace}\" .Values.global.namespace }}}}"
+
+        service['namespace'] = service_namespace
+        
+        # Log details for each distinct service
+        logging.info(f"Webhook service for '{resource_name}' set to:")
+        logging.info(f"  Name: {service_name}")
+        logging.info(f"  Namespace: {service_namespace}")
+        logging.info(f"  Path: {service_path}\n")
+
+# updateHelmResources adds standard configuration to the generic kubernetes resources
+def update_helm_resources(chartName, helmChart, skip_rbac_overrides, exclusions, inclusions, branch):
+    logging.info(f"Updating resources chart: {chartName}")
+
+    resource_kinds = [
+        "ClusterRole", "ClusterRoleBinding", "ConfigMap", "Deployment", "MutatingWebhookConfiguration",
+        "NetworkPolicy", "PersistentVolumeClaim", "RoleBinding", "Role", "Route", "Secret", "Service", "StatefulSet",
+        "ValidatingWebhookConfiguration", "Job", "ConsolePlugin"
+    ]
+
+    namespace_scoped_kinds = [
+        "ConfigMap", "Deployment", "NetworkPolicy", "PersistentVolumeClaim", "RoleBinding", "Role", "Route",
+        "Secret", "Service", "StatefulSet", "Job"
+    ]
+
+    for kind in resource_kinds:
+        resource_templates = findTemplatesOfType(helmChart, kind)
+        if not resource_templates:
+            logging.info("------------------------------------------")
+            logging.warning(f"No {kind} templates found in the Helm chart [Skipping]")
+            logging.info("------------------------------------------\n")
+        else:
+            logging.info("------------------------------------------")
+            logging.info(f"Found {len(resource_templates)} {kind} templates")
+            logging.info("------------------------------------------")
+
+        # Set the default namespace for the chart.
+        default_namespace = """{{ .Values.global.namespace }}"""
+
+        for template_path in resource_templates:
+            try:
+                with open(template_path, 'r') as f:
+                    resource_data = yaml.safe_load(f)
+                    resource_name = resource_data['metadata'].get('name')
+                    logging.info(f"Processing resource: {resource_name} from template: {template_path}")
+
+                # Ensure namespace is set for namespace-scoped resources
+                if kind in namespace_scoped_kinds:
+                    resource_namespace = resource_data['metadata'].get('namespace')
+
+                    if resource_namespace is None or resource_namespace == "PLACEHOLDER_NAMESPACE":
+                        # Use the default Helm namespace if not specified
+                        resource_namespace = default_namespace
+                    else:
+                        # Allow Helm templating to override existing namespace
+                        resource_namespace = f"{{{{ default \"{resource_namespace}\" .Values.global.namespace }}}}"
+
+                    resource_data['metadata']['namespace'] = resource_namespace
+                    logging.info(f"Namespace for '{resource_name}' set to: {resource_namespace}")
+
+                # Ensure Mutating/Validating WebhookConfigurations has a service namespace set,
+                # defaulting to Helm values if not specified.
+                if kind == "MutatingWebhookConfiguration" or kind == "ValidatingWebhookConfiguration":
+                    ensure_webhook_namespace(resource_data, resource_name, default_namespace)
+
+                with open(template_path, 'w') as f:
+                    yaml.dump(resource_data, f, width=float("inf"), default_flow_style=False, allow_unicode=True)
+                    logging.info(f"Succesfully updated resource: {resource_name}\n")
+
+            except Exception as e:
+                logging.error(f"Error processing template '{template_path}': {e}")
+
+    logging.info("Resource updating process completed.")
+
 def injectRequirements(helmChart, operator, exclusions, sizes, branch):
     logging.info("Updating Helm chart '%s' with onboarding requirements ...", helmChart)
     imageKeyMapping = operator.get('imageMappings', {})
+    exclusions = operator.get("exclusions", [])
+    inclusions = operator.get("inclusions", [])
+    skip_rbac_overrides = operator.get("skipRBACOverrides", True)
 
     # Fixes image references in the Helm chart.
     fixImageReferences(helmChart, imageKeyMapping)
@@ -882,6 +993,9 @@ def injectRequirements(helmChart, operator, exclusions, sizes, branch):
 
     fixImageReferencesForAddonTemplate(helmChart, imageKeyMapping)
     injectAnnotationsForAddonTemplate(helmChart)
+    
+    if is_version_compatible(branch, '2.13', '2.8', '2.13'):
+        update_helm_resources(operator.get("name"), helmChart, skip_rbac_overrides, exclusions, inclusions, branch)
 
     # Updates RBAC and deployment configuration in the Helm chart.
     updateRBAC(helmChart)
