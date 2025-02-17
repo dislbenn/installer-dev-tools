@@ -475,6 +475,13 @@ def copy_additional_resources(helmChart, csvPath):
             ", ".join(set(unsupported_resources)))  # Use `set` to avoid duplicates
         sys.exit(1)
 
+# Copies webhook resources from the target directory to the Helm chart
+def copy_webhook_configuration_manifests(dest_helm_chart_path, webhook_path):
+    logging.info("Copying webhook configuration resources from the repo if present ...")
+
+    dir_path = os.path.dirname(webhook_path)
+    logging.info("Reading resources from directory: '%s'", dir_path)
+
 # Given a resource Kind, return all filepaths of that resource type in a chart directory
 def findTemplatesOfType(helmChart, kind):
     resources = []
@@ -1168,6 +1175,9 @@ def main():
                 # Validate the bundlePath exists in config.yaml
                 logging.error("Unable to find given channel: %s", operator.get("channel", "Channel not specified"))
                 exit(1)
+                
+            webhook_path = operator.get("webhook_path")
+            # if webhook_path:
 
             branch = repo.get("branch", "")
             escaped_variables = operator.get("escape-template-variables", [])
@@ -1233,6 +1243,10 @@ def main():
             logging.info("Adding Resources from CSV to helm chart '%s' ...", operator["name"])
             extract_csv_resources(helmChart, csvPath, ignore_webhook_definitions)
             copy_additional_resources(helmChart, csvPath)
+            
+            logging.info("Adding Webhook Configuration Manifests")
+            copy_webhook_configuration_manifests(helmChart, webhook_path)
+            
             escape_template_variables(helmChart, escaped_variables)
             logging.info("Resources added from CSV successfully.\n")
 
