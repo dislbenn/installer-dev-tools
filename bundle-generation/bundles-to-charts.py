@@ -1251,7 +1251,8 @@ def main():
             copy_additional_resources(helmChart, csvPath)
             
             print_title("Adding Webhook Configuration Manifests")
-            copy_webhook_configuration_manifests(helmChart, webhook_path)
+            tmp_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "tmp", repo)
+            copy_webhook_configuration_manifests(helmChart, os.path.join(tmp_dir, webhook_path))
             
             escape_template_variables(helmChart, escaped_variables)
             logging.info("Resources added from CSV successfully.\n")
