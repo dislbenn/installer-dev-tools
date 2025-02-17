@@ -489,6 +489,25 @@ def copy_webhook_configuration_manifests(dest_helm_chart_path, webhook_path):
     if not os.path.exists(webhook_path) or not os.path.isfile(webhook_path):
         logging.warning("Webhook file not found: '%s'. Skipping webhook creation.", webhook_path)
         return
+    
+    with open(webhook_path, 'r') as file:
+        content = file.read()
+
+    # Split the content by '---' if it's a multi-document YAML file 
+    documents = content.split('---')
+    
+    for i, doc in enumerate(documents):
+        try:
+            # Load the YAML content of the document
+            yaml_content = yaml.safe_load(doc)
+
+            # Extract the kind and name from the resource
+            kind = yaml_content.get('kind', 'UnknownKind')
+            name = yaml_content.get('metadata', {}).get('name', 'UnknownName')
+            
+            logging.info("kind: %s, name: %s" % (kind, name))
+        except Exception as e:
+            logging.warning("failure")
 
     logging.info("Found webhook configuration file: '%s'", webhook_path)
     shutil.copy(webhook_path, os.path.join(dest_helm_chart_path, "templates", os.path.basename(webhook_path)))
