@@ -165,12 +165,11 @@ def fillChartYaml(helmChart, name, csvPath):
     chartYml = os.path.join(helmChart, "Chart.yaml")
 
     # Read Chart.yaml
-    with open(chartYml, 'r') as f:
+    with open(chartYml, 'r', encoding='utf-8') as f:
         chart = yaml.safe_load(f)
 
-    # logging.info("%s", csvPath)
     # Read CSV
-    with open(csvPath, 'r') as f:
+    with open(csvPath, 'r', encoding='utf-8') as f:
         csv = yaml.safe_load(f)
 
     logging.info("Chart Name: %s", helmChart)
@@ -185,7 +184,7 @@ def fillChartYaml(helmChart, name, csvPath):
                 logging.info("Description: %s", csv["metadata"]["annotations"]["description"])
                 chart['description'] = csv["metadata"]["annotations"]["description"]
     # chart['version'] = csv['metadata']['name'].split(".", 1)[1][1:]
-    with open(chartYml, 'w') as f:
+    with open(chartYml, 'w', encoding='utf-8') as f:
         yaml.dump(chart, f)
     logging.info("'%s' Chart.yaml updated successfully.\n", helmChart)
 
@@ -203,7 +202,7 @@ def add_deployment(helmChart, deployment):
     deployYaml = os.path.join(helmChart, "templates",  name + ".yaml")
     shutil.copyfile(os.path.join(os.path.dirname(os.path.realpath(__file__)), "chart-templates/templates/deployment.yaml"), deployYaml)
 
-    with open(deployYaml, 'r') as f:
+    with open(deployYaml, 'r', encoding='utf-8') as f:
         deploy = yaml.safe_load(f)
 
     deploy['spec'] = deployment['spec']
@@ -213,7 +212,7 @@ def add_deployment(helmChart, deployment):
                 if 'imagePullPolicy' in deploy['spec']['template']['spec']:
                     del deploy['spec']['template']['spec']['imagePullPolicy']
     deploy['metadata']['name'] = name
-    with open(deployYaml, 'w') as f:
+    with open(deployYaml, 'w', encoding='utf-8') as f:
         yaml.dump(deploy, f)
     logging.info("Deployment '%s.yaml' updated successfully.\n", name)
 
@@ -234,13 +233,13 @@ def add_cluster_scoped_rbac(helmChart, rbacMap):
     # Create Clusterrole
     clusterroleYaml = os.path.join(helmChart, "templates",  name + "-clusterrole.yaml")
     shutil.copyfile(os.path.join(os.path.dirname(os.path.realpath(__file__)), "chart-templates/templates/clusterrole.yaml"), clusterroleYaml)
-    with open(clusterroleYaml, 'r') as f:
+    with open(clusterroleYaml, 'r', encoding='utf-8') as f:
         clusterrole = yaml.safe_load(f)
     # Edit Clusterrole
     clusterrole["rules"] = rbacMap["rules"]
     clusterrole["metadata"]["name"] = name
     # Save Clusterrole
-    with open(clusterroleYaml, 'w') as f:
+    with open(clusterroleYaml, 'w', encoding='utf-8') as f:
         yaml.dump(clusterrole, f)
     logging.info("Clusterrole '%s-clusterrole.yaml' updated successfully.", name)
 
@@ -248,12 +247,12 @@ def add_cluster_scoped_rbac(helmChart, rbacMap):
     # Create Serviceaccount
     serviceAccountYaml = os.path.join(helmChart, "templates",  name + "-serviceaccount.yaml")
     shutil.copyfile(os.path.join(os.path.dirname(os.path.realpath(__file__)), "chart-templates/templates/serviceaccount.yaml"), serviceAccountYaml)
-    with open(serviceAccountYaml, 'r') as f:
+    with open(serviceAccountYaml, 'r', encoding='utf-8') as f:
         serviceAccount = yaml.safe_load(f)
     # Edit Serviceaccount
     serviceAccount["metadata"]["name"] = name
     # Save Serviceaccount
-    with open(serviceAccountYaml, 'w') as f:
+    with open(serviceAccountYaml, 'w', encoding='utf-8') as f:
         yaml.dump(serviceAccount, f)
     logging.info("Serviceaccount '%s-serviceaccount.yaml' updated successfully.", name)
 
@@ -261,12 +260,12 @@ def add_cluster_scoped_rbac(helmChart, rbacMap):
     # Create Clusterrolebinding
     clusterrolebindingYaml = os.path.join(helmChart, "templates",  name + "-clusterrolebinding.yaml")
     shutil.copyfile(os.path.join(os.path.dirname(os.path.realpath(__file__)), "chart-templates/templates/clusterrolebinding.yaml"), clusterrolebindingYaml)
-    with open(clusterrolebindingYaml, 'r') as f:
+    with open(clusterrolebindingYaml, 'r', encoding='utf-8') as f:
         clusterrolebinding = yaml.safe_load(f)
     clusterrolebinding['metadata']['name'] = name
     clusterrolebinding['roleRef']['name'] = clusterrole["metadata"]["name"]
     clusterrolebinding['subjects'][0]['name'] = name
-    with open(clusterrolebindingYaml, 'w') as f:
+    with open(clusterrolebindingYaml, 'w', encoding='utf-8') as f:
         yaml.dump(clusterrolebinding, f)
     logging.info("Clusterrolebinding '%s-clusterrolebinding.yaml' updated successfully.", name)
     logging.info("Cluster scoped RBAC created.\n")
@@ -286,13 +285,13 @@ def add_namespace_scoped_rbac(helmChart, rbacMap):
     # Create role
     roleYaml = os.path.join(helmChart, "templates",  name + "-role.yaml")
     shutil.copyfile(os.path.join(os.path.dirname(os.path.realpath(__file__)), "chart-templates/templates/role.yaml"), roleYaml)
-    with open(roleYaml, 'r') as f:
+    with open(roleYaml, 'r', encoding='utf-8') as f:
         role = yaml.safe_load(f)
     # Edit role
     role["rules"] = rbacMap["rules"]
     role["metadata"]["name"] = name
     # Save role
-    with open(roleYaml, 'w') as f:
+    with open(roleYaml, 'w', encoding='utf-8') as f:
         yaml.dump(role, f)
     logging.info("Role '%s-role.yaml' updated successfully.", name)
 
@@ -301,12 +300,12 @@ def add_namespace_scoped_rbac(helmChart, rbacMap):
     if not os.path.isfile(serviceAccountYaml):
         logging.info("Serviceaccount doesnt exist. Templating '%s-serviceaccount.yaml' ...", name)
         shutil.copyfile(os.path.join(os.path.dirname(os.path.realpath(__file__)), "chart-templates/templates/serviceaccount.yaml"), serviceAccountYaml)
-        with open(serviceAccountYaml, 'r') as f:
+        with open(serviceAccountYaml, 'r', encoding='utf-8') as f:
             serviceAccount = yaml.safe_load(f)
         # Edit Serviceaccount
         serviceAccount["metadata"]["name"] = name
         # Save Serviceaccount
-        with open(serviceAccountYaml, 'w') as f:
+        with open(serviceAccountYaml, 'w', encoding='utf-8') as f:
             yaml.dump(serviceAccount, f)
         logging.info("Serviceaccount '%s-serviceaccount.yaml' updated successfully.", name)
 
@@ -314,12 +313,12 @@ def add_namespace_scoped_rbac(helmChart, rbacMap):
     # Create rolebinding
     rolebindingYaml = os.path.join(helmChart, "templates",  name + "-rolebinding.yaml")
     shutil.copyfile(os.path.join(os.path.dirname(os.path.realpath(__file__)), "chart-templates/templates/rolebinding.yaml"), rolebindingYaml)
-    with open(rolebindingYaml, 'r') as f:
+    with open(rolebindingYaml, 'r', encoding='utf-8') as f:
         rolebinding = yaml.safe_load(f)
     rolebinding['metadata']['name'] = name
     rolebinding['roleRef']['name'] = role["metadata"]["name"] = name
     rolebinding['subjects'][0]['name'] = name
-    with open(rolebindingYaml, 'w') as f:
+    with open(rolebindingYaml, 'w', encoding='utf-8') as f:
         yaml.dump(rolebinding, f)
     logging.info("Rolebinding '%s-rolebinding.yaml' updated successfully.", name)
     logging.info("Namespace scoped RBAC created.\n")
@@ -349,7 +348,7 @@ def add_webhook_configuration(helm_chart, webhook_map):
 
     shutil.copyfile(source_template, destination_template)
 
-    with open(destination_template, 'r') as f:
+    with open(destination_template, 'r', encoding='utf-8') as f:
         webhook_config = yaml.safe_load(f)
 
     # Ensure 'metadata.name' is set
@@ -376,7 +375,7 @@ def add_webhook_configuration(helm_chart, webhook_map):
     webhook_config["webhooks"].append(webhook_entry)
 
     # Save updated WebhookConfiguration
-    with open(destination_template, 'w') as f:
+    with open(destination_template, 'w', encoding='utf-8') as f:
         yaml.dump(webhook_config, f)
 
     logging.info("%sWebhookConfiguration '%s' updated successfully.",
@@ -462,7 +461,7 @@ def extract_csv_resources(helm_chart, csv_path, ignore_webhook_definitions=True)
     logging.info("Reading CSV file: '%s'", csv_path)
 
     try:
-        with open(csv_path, 'r') as f:
+        with open(csv_path, 'r', encoding='utf-8') as f:
             csv_data = yaml.safe_load(f)
     except Exception as e:
         logging.error("Unexpected error occured while processing file '%s': %s", csv_path, e)
@@ -526,7 +525,7 @@ def copy_additional_resources(helmChart, csvPath):
         if filename.endswith(".yaml") or filename.endswith(".yml"):
             filePath = os.path.join(dirPath, filename)
             try:
-                with open(filePath, 'r') as f:
+                with open(filePath, 'r', encoding='utf-8') as f:
                     fileYml = yaml.safe_load(f)
             except Exception as e:
                 logging.error("Unexpected error occured while processing file '%s': %s", filePath, e)
@@ -580,7 +579,7 @@ def findTemplatesOfType(helmChart, kind):
     for filename in os.listdir(os.path.join(helmChart, "templates")):
         if filename.endswith(".yaml") or filename.endswith(".yml"):
             filePath = os.path.join(helmChart, "templates", filename)
-            with open(filePath, 'r') as f:
+            with open(filePath, 'r', encoding='utf-8') as f:
                 fileYml = yaml.safe_load(f)
             if fileYml['kind'] == kind:
                 resources.append(filePath)
@@ -600,13 +599,13 @@ def fixEnvVarImageReferences(helmChart, imageKeyMapping):
     """
     logging.info("Fixing image references in container 'env' section in deployments and values.yaml ...")
     valuesYaml = os.path.join(helmChart, "values.yaml")
-    with open(valuesYaml, 'r') as f:
+    with open(valuesYaml, 'r', encoding='utf-8') as f:
         values = yaml.safe_load(f)
     deployments = findTemplatesOfType(helmChart, 'Deployment')
 
     imageKeys = []
     for deployment in deployments:
-        with open(deployment, 'r') as f:
+        with open(deployment, 'r', encoding='utf-8') as f:
             deploy = yaml.safe_load(f)
 
         containers = deploy['spec']['template']['spec']['containers']
@@ -626,12 +625,12 @@ def fixEnvVarImageReferences(helmChart, imageKeyMapping):
                     sys.exit(1)
                 imageKeys.append(image_key)
                 env['value'] = "{{ .Values.global.imageOverrides." + image_key + " }}"
-        with open(deployment, 'w') as f:
+        with open(deployment, 'w', encoding='utf-8') as f:
             yaml.dump(deploy, f)
 
     for imageKey in imageKeys:
         values['global']['imageOverrides'][imageKey] = ""
-    with open(valuesYaml, 'w') as f:
+    with open(valuesYaml, 'w', encoding='utf-8') as f:
         yaml.dump(values, f)
     logging.info("Image container env references in deployments and values.yaml updated successfully.\n")
 
@@ -646,14 +645,14 @@ def fixImageReferences(helmChart, imageKeyMapping):
     """
     logging.info("Fixing image and pull policy references in deployments and values.yaml ...")
     valuesYaml = os.path.join(helmChart, "values.yaml")
-    with open(valuesYaml, 'r') as f:
+    with open(valuesYaml, 'r', encoding='utf-8') as f:
         values = yaml.safe_load(f)
 
     deployments = findTemplatesOfType(helmChart, 'Deployment')
     imageKeys = []
     temp = "" ## temporarily read image ref
     for deployment in deployments:
-        with open(deployment, 'r') as f:
+        with open(deployment, 'r', encoding='utf-8') as f:
             deploy = yaml.safe_load(f)
 
         containers = deploy['spec']['template']['spec']['containers']
@@ -668,7 +667,7 @@ def fixImageReferences(helmChart, imageKeyMapping):
             # temp = container['image']
             container['image'] = "{{ .Values.global.imageOverrides." + image_key + " }}"
             container['imagePullPolicy'] = "{{ .Values.global.pullPolicy }}"
-        with open(deployment, 'w') as f:
+        with open(deployment, 'w', encoding='utf-8') as f:
             yaml.dump(deploy, f)
 
     # Remove the placeholder/dummy image overrides we might get from our values template
@@ -678,7 +677,7 @@ def fixImageReferences(helmChart, imageKeyMapping):
         pass
     for imageKey in imageKeys:
         values['global']['imageOverrides'][imageKey] = "" # set to temp to debug
-    with open(valuesYaml, 'w') as f:
+    with open(valuesYaml, 'w', encoding='utf-8') as f:
         yaml.dump(values, f)
     logging.info("Image references and pull policy in deployments and values.yaml updated successfully.\n")
 
@@ -757,7 +756,7 @@ def injectHelmFlowControl(deployment, sizes, branch):
     """
     logging.info("Adding Helm flow control for NodeSelector, Proxy Overrides and SecCompProfile...")
     deploy = open(deployment, "r")
-    with open(deployment, 'r') as f:
+    with open(deployment, 'r', encoding='utf-8') as f:
         deployx = yaml.safe_load(f)
     lines = deploy.readlines()
     for i, line in enumerate(lines):
@@ -867,11 +866,11 @@ def updateDeployments(helmChart, operator, exclusions, sizes, branch):
     """
     logging.info("Updating deployments with antiaffinity, security policies, and tolerations ...")
     deploySpecYaml = os.path.join(os.path.dirname(os.path.realpath(__file__)), "chart-templates/templates/deploymentspec.yaml")
-    with open(deploySpecYaml, 'r') as f:
+    with open(deploySpecYaml, 'r', encoding='utf-8') as f:
         deploySpec = yaml.safe_load(f)
     deployments = findTemplatesOfType(helmChart, 'Deployment')
     for deployment in deployments:
-        with open(deployment, 'r') as f:
+        with open(deployment, 'r', encoding='utf-8') as f:
             deploy = yaml.safe_load(f)
         affinityList = deploySpec['affinity']['podAntiAffinity']['preferredDuringSchedulingIgnoredDuringExecution']
         for antiaffinity in affinityList:
@@ -943,7 +942,7 @@ def updateDeployments(helmChart, operator, exclusions, sizes, branch):
                     logging.warning("Leaving non-standard seccompprofile setting for container %s", container_name)
 
 
-        with open(deployment, 'w') as f:
+        with open(deployment, 'w', encoding='utf-8') as f:
             yaml.dump(deploy, f)
         logging.info("Deployments updated with antiaffinity, security policies, and tolerations successfully. \n")
 
@@ -963,12 +962,12 @@ def updateRBAC(helmChart):
     rolebindings = findTemplatesOfType(helmChart, 'RoleBinding')
 
     for rbacFile in clusterroles + roles + clusterrolebindings + rolebindings:
-        with open(rbacFile, 'r') as f:
+        with open(rbacFile, 'r', encoding='utf-8') as f:
             rbac = yaml.safe_load(f)
         rbac['metadata']['name'] = "{{ .Values.org }}:{{ .Chart.Name }}:" + rbac['metadata']['name']
         if rbac['kind'] in ['RoleBinding', 'ClusterRoleBinding']:
             rbac['roleRef']['name'] = "{{ .Values.org }}:{{ .Chart.Name }}:" + rbac['roleRef']['name']
-        with open(rbacFile, 'w') as f:
+        with open(rbacFile, 'w', encoding='utf-8') as f:
             yaml.dump(rbac, f)
     logging.info("Clusterroles, roles, clusterrolebindings, and rolebindings updated. \n")
 
@@ -1048,7 +1047,7 @@ def addCRDs(repo, operator, outputDir, preservedFiles=None, overwrite=False):
             continue
 
         filepath = os.path.join(manifestsPath, filename)
-        with open(filepath, 'r') as f:
+        with open(filepath, 'r', encoding='utf-8') as f:
             resourceFile = yaml.safe_load(f)
 
         if "kind" not in resourceFile:
@@ -1090,7 +1089,7 @@ def getBundleManifestsPath(repo, operator):
         if not os.path.isfile(annotations_file):
             logging.critical("Could not find annotations at given path: %s", annotations_file)
             sys.exit(1)
-        with open(annotations_file, 'r') as f:
+        with open(annotations_file, 'r', encoding='utf-8') as f:
             annotations = yaml.safe_load(f)
             channels = annotations.get('annotations', {}).get('operators.operatorframework.io.bundle.channels.v1').split(',')
             if not channels:
@@ -1133,7 +1132,7 @@ def get_csv_path(repo, operator):
             continue
 
         file_path = os.path.join(manifests_path, file_name)
-        with open(file_path, 'r') as f:
+        with open(file_path, 'r', encoding='utf-8') as f:
             resource_file = yaml.safe_load(f)
 
         if resource_file and resource_file.get("kind") == "ClusterServiceVersion":
@@ -1156,7 +1155,7 @@ def injectAnnotationsForAddonTemplate(helmChart):
     addonTemplates = findTemplatesOfType(helmChart, 'AddOnTemplate')
     for addonTemplate in addonTemplates:
         injected = False
-        with open(addonTemplate, 'r') as f:
+        with open(addonTemplate, 'r', encoding='utf-8') as f:
             templateContent = yaml.safe_load(f)
             agentSpec = templateContent['spec']['agentSpec']
             if 'workload' not in agentSpec:
@@ -1174,7 +1173,7 @@ def injectAnnotationsForAddonTemplate(helmChart):
                         metadata['annotations']['target.workload.openshift.io/management'] = '{"effect": "PreferredDuringScheduling"}'
                         injected = True
         if injected:
-            with open(addonTemplate, 'w') as f:
+            with open(addonTemplate, 'w', encoding='utf-8') as f:
                 yaml.dump(templateContent, f, width=float("inf"))
                 logging.info("Annotations injected successfully. \n")
 
@@ -1195,7 +1194,7 @@ def fixImageReferencesForAddonTemplate(helmChart, imageKeyMapping):
     imageKeys = []
     temp = "" ## temporarily read image ref
     for addonTemplate in addonTemplates:
-        with open(addonTemplate, 'r') as f:
+        with open(addonTemplate, 'r', encoding='utf-8') as f:
             templateContent = yaml.safe_load(f)
             agentSpec = templateContent['spec']['agentSpec']
             if 'workload' not in agentSpec:
@@ -1218,20 +1217,20 @@ def fixImageReferencesForAddonTemplate(helmChart, imageKeyMapping):
                         imageKeys.append(image_key)
                         container['image'] = "{{ .Values.global.imageOverrides." + image_key + " }}"
                         # container['imagePullPolicy'] = "{{ .Values.global.pullPolicy }}"
-        with open(addonTemplate, 'w') as f:
+        with open(addonTemplate, 'w', encoding='utf-8') as f:
             yaml.dump(templateContent, f, width=float("inf"))
             logging.info("AddOnTemplate updated with image override successfully. \n")
 
     if len(imageKeys) == 0:
         return
     valuesYaml = os.path.join(helmChart, "values.yaml")
-    with open(valuesYaml, 'r') as f:
+    with open(valuesYaml, 'r', encoding='utf-8') as f:
         values = yaml.safe_load(f)
     if 'imageOverride' in values['global']['imageOverrides']:
         del values['global']['imageOverrides']['imageOverride']
     for imageKey in imageKeys:
         values['global']['imageOverrides'][imageKey] = "" # set to temp to debug
-    with open(valuesYaml, 'w') as f:
+    with open(valuesYaml, 'w', encoding='utf-8') as f:
         yaml.dump(values, f, width=float("inf"))
     logging.info("Image references and pull policy in addon templates and values.yaml updated successfully.\n")
 
@@ -1250,9 +1249,12 @@ def main():
     parser.set_defaults(lint=False)
 
     args = parser.parse_args()
-    skipOverrides = args.skipOverrides
     destination = args.destination
+    skipOverrides = args.skipOverrides
     lint = args.lint
+
+    logging.info("Parsed arguments: destination='%s', skipOverrides=%s, lint=%s",
+                 destination, skipOverrides, lint)
 
     if lint == False and not destination:
         logging.critical("Destination directory is required when not linting.")
@@ -1260,7 +1262,7 @@ def main():
 
     # Config.yaml holds the configurations for Operator bundle locations to be used
     config_yaml = os.path.join(os.path.dirname(os.path.realpath(__file__)),"config.yaml")
-    with open(config_yaml, 'r') as f:
+    with open(config_yaml, 'r', encoding='utf-8') as f:
         config = yaml.safe_load(f)
 
     sys.exit(1)
@@ -1286,7 +1288,7 @@ def main():
         #   We assume the bundle-gen tool knows which repos and such it needs to use
         #   to do its job, but needs to be told a branch-name or Git SHA to use
         #   to obtain bundle input info.
-        
+
         csv_path = ""
         repo_name = repo.get("repo_name")
 
@@ -1305,7 +1307,7 @@ def main():
             # This is only used for hub sizing.
             # sizesyaml = repo_path + "/bundle/manifests/sizes.yaml"
             # if os.path.isfile(sizesyaml):
-            #     with open(sizesyaml, 'r') as f:
+            #     with open(sizesyaml, 'r', encoding='utf-8') as f:
             #         sizes = yaml.safe_load(f)
             # else:
             #     sizes = {}
@@ -1342,7 +1344,7 @@ def main():
             repo["operators"] = [op]
             sizesyaml = bundle_path + "/sizes.yaml"
             if os.path.isfile(sizesyaml):
-                with open(sizesyaml, 'r') as f:
+                with open(sizesyaml, 'r', encoding='utf-8') as f:
                     sizes = yaml.safe_load(f)
             else:
                 sizes = {}
