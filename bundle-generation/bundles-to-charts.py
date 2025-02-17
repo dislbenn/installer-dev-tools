@@ -1181,9 +1181,6 @@ def main():
                 # Validate the bundlePath exists in config.yaml
                 logging.error("Unable to find given channel: %s", operator.get("channel", "Channel not specified"))
                 exit(1)
-                
-            webhook_path = operator.get("webhook_path")
-            # if webhook_path:
 
             branch = repo.get("branch", "")
             escaped_variables = operator.get("escape-template-variables", [])
@@ -1251,7 +1248,10 @@ def main():
             copy_additional_resources(helmChart, csvPath)
             
             print_title("Adding Webhook Configuration Manifests")
-            tmp_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "tmp", repo)
+            webhook_path = operator.get("webhook_path")
+
+            tmp_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "tmp", repo["repo_name"])
+            # manifests_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "tmp", repo, operator["bundlePath"])
             copy_webhook_configuration_manifests(helmChart, os.path.join(tmp_dir, webhook_path))
             
             escape_template_variables(helmChart, escaped_variables)
