@@ -507,7 +507,7 @@ def copy_webhook_configuration_manifests(dest_helm_chart_path, webhook_path):
             
             logging.info("kind: %s, name: %s" % (kind, name))
         except Exception as e:
-            logging.warning("failure")
+            logging.warning(f"failure {e}")
 
     logging.info("Found webhook configuration file: '%s'", webhook_path)
     shutil.copy(webhook_path, os.path.join(dest_helm_chart_path, "templates", os.path.basename(webhook_path)))
