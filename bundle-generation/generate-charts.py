@@ -850,7 +850,7 @@ def update_helm_resources(chartName, helmChart, skip_rbac_overrides, exclusions,
                             logging.info(f"Subject namespace for {resource_name} set to: {target_namespace} (Helm default used).\n")
 
                 with open(template_path, 'w') as f:
-                    yaml.dump(resource_data, f, width=float("inf"), default_flow_style=False, allow_unicode=True)
+                    yaml.dump(resource_data, f, width=float("inf"), default_style="\n", default_flow_style=False, allow_unicode=True)
                     logging.info(f"Succesfully updated resource: {resource_name}\n")
 
             except Exception as e:
