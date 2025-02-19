@@ -649,7 +649,7 @@ def update_helm_resources(chartName, helmChart, skip_rbac_overrides, exclusions,
                     ensure_webhook_namespace(resource_data, resource_name, default_namespace)
 
                 with open(template_path, 'w') as f:
-                    yaml.dump(resource_data, f, width=float("inf"), default_style="\n", default_flow_style=True, allow_unicode=True)
+                    yaml.dump(resource_data, f, width=float("inf"), default_style='"', default_flow_style=False, allow_unicode=True)
                     logging.info(f"Succesfully updated resource: {resource_name}\n")
 
             except Exception as e:
