@@ -313,7 +313,7 @@ def fixEnvVarImageReferences(helmChart, imageKeyMapping):
         
     resource_kinds = ["Deployment", "Job", "StatefulSet"]
     for kind in resource_kinds:
-        logging.WARN("OVER HERE")
+        logging.debug("OVER HERE")
         resource_templates = findTemplatesOfType(helmChart, kind)
 
         imageKeys = []
