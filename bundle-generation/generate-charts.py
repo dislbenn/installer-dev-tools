@@ -364,11 +364,12 @@ def fixImageReferences(helmChart, imageKeyMapping):
         values = yaml.safe_load(f)
     
     resource_kinds = ["Deployment", "Job", "StatefulSet"]
+    imageKeys = []
     for kind in resource_kinds:
         logging.debug("OVER HERE")
         resource_templates = findTemplatesOfType(helmChart, kind)
 
-        imageKeys = []
+        # imageKeys = []
         for template_path in resource_templates:
             with open(template_path, 'r') as f:
                 resource_data = yaml.safe_load(f)
