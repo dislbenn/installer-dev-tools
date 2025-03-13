@@ -369,7 +369,6 @@ def fixImageReferences(helmChart, imageKeyMapping):
         logging.debug("OVER HERE")
         resource_templates = findTemplatesOfType(helmChart, kind)
 
-        # imageKeys = []
         for template_path in resource_templates:
             with open(template_path, 'r') as f:
                 resource_data = yaml.safe_load(f)
@@ -386,14 +385,16 @@ def fixImageReferences(helmChart, imageKeyMapping):
                 container['image'] = "{{ .Values.global.imageOverrides." + image_key + " }}"
                 container['imagePullPolicy'] = "{{ .Values.global.pullPolicy }}"
 
-                args = container.get('args', [])
-                refreshed_args = []
-                for arg in args:
-                    if "--agent-image-name" not in arg:
-                        refreshed_args.append(arg)
-                    else:
-                        refreshed_args.append("--agent-image-name="+"{{ .Values.global.imageOverrides." + image_key + " }}")
-                container['args'] = refreshed_args
+                if kind == "Deployment":
+                    args = container.get('args', [])
+                    refreshed_args = []
+                    for arg in args:
+                        if "--agent-image-name" not in arg:
+                            refreshed_args.append(arg)
+                        else:
+                            refreshed_args.append("--agent-image-name="+"{{ .Values.global.imageOverrides." + image_key + " }}")
+                    container['args'] = refreshed_args
+
             with open(template_path, 'w') as f:
                 yaml.dump(resource_data, f, width=float("inf"))
 
