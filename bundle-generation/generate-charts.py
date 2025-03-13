@@ -248,6 +248,7 @@ def copyHelmChart(destinationChartPath, repo, chart, chartVersion):
 
     yamlList = helmTemplateOutput.split('---')
     for outputContent in yamlList:
+        logging.info(f"output content {outputContent}")
         yamlContent = yaml.safe_load(outputContent)
         if yamlContent is None:
             logging.warning("Skipped empty or invalid YAML content during template processing")
@@ -309,32 +310,35 @@ def fixEnvVarImageReferences(helmChart, imageKeyMapping):
 
     with open(valuesYaml, 'r') as f:
         values = yaml.safe_load(f)
-    deployments = findTemplatesOfType(helmChart, 'Deployment')
-
-    imageKeys = []
-    for deployment in deployments:
-        with open(deployment, 'r') as f:
-            deploy = yaml.safe_load(f)
         
-        containers = deploy['spec']['template']['spec']['containers']
-        for container in containers:
-            if 'env' not in container: 
-                continue
-            
-            for env in container['env']:
-                image_key = env['name']
-                if image_key.endswith('_IMAGE') == False:
+    resource_kinds = ["Deployment", "Job", "StatefulSet"]
+    for kind in resource_kinds:
+        resource_templates = findTemplatesOfType(helmChart, kind)
+
+        imageKeys = []
+        for template_path in resource_templates:
+            with open(template_path, 'r') as f:
+                resource_data = yaml.safe_load(f)
+        
+            containers = resource_data['spec']['template']['spec']['containers']
+            for container in containers:
+                if 'env' not in container: 
                     continue
-                image_key = parse_image_ref(env['value'])['repository']
-                try:
-                    image_key = imageKeyMapping[image_key]
-                except KeyError:
-                    logging.critical("No image key mapping provided for imageKey: %s" % image_key)
-                    exit(1)
-                imageKeys.append(image_key)
-                env['value'] = "{{ .Values.global.imageOverrides." + image_key + " }}"
-        with open(deployment, 'w') as f:
-            yaml.dump(deploy, f, width=float("inf"))
+                
+                for env in container['env']:
+                    image_key = env['name']
+                    if image_key.endswith('_IMAGE') == False:
+                        continue
+                    image_key = parse_image_ref(env['value'])['repository']
+                    try:
+                        image_key = imageKeyMapping[image_key]
+                    except KeyError:
+                        logging.critical("No image key mapping provided for imageKey: %s" % image_key)
+                        exit(1)
+                    imageKeys.append(image_key)
+                    env['value'] = "{{ .Values.global.imageOverrides." + image_key + " }}"
+            with open(template_path, 'w') as f:
+                yaml.dump(resource_data, f, width=float("inf"))
 
     for imageKey in imageKeys:
         values['global']['imageOverrides'][imageKey] = ""
