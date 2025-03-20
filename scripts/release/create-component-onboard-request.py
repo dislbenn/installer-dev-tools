@@ -4,6 +4,7 @@
 # Assumes: Python 3.6+
 
 import utils.common
+import logging
 import inquirer
 
 def prompt_user(prompt, default=None, required=False, example=None):
@@ -61,6 +62,8 @@ def onboarding_new_component(config_file, onboarding_type):
 
     # Load existing YAML
     config = utils.common.load_yaml(config_file)
+    
+    logging.info(config)
 
     # Step 2: Collect basic repository details
     org = prompt_user("Enter the GitHub organization or username", required=True, default="stolostron")
