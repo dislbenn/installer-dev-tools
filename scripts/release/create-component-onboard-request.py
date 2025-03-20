@@ -63,7 +63,7 @@ def onboarding_new_component(config_file, onboarding_type):
     config = utils.common.load_yaml(config_file)
 
     # Step 2: Collect basic repository details
-    org = prompt_user("Enter the GitHub organization or username", required=True, default="solostron")
+    org = prompt_user("Enter the GitHub organization or username", required=True, default="stolostron")
     repo = prompt_user("Enter the repository name", required=True, example="discovery")
     branch = prompt_user("Enter the branch name", default="main")
     github_ref = f"https://github.com/{org}/{repo}.git"
