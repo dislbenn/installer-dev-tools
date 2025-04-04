@@ -462,7 +462,7 @@ def is_version_compatible(min_release_version, min_backplane_version):
         return True
 
     else:
-        logging.warning("Neither ACM nor MCE release version meets the required minimum version.")
+        # logging.warning("Neither ACM nor MCE release version meets the required minimum version.")
         return False
 
 
