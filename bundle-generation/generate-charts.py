@@ -1155,8 +1155,8 @@ def main():
         exit(0)
 
     # Set global environment variables
-    os.environ['ACM_RELEASE_VERSION'] = config.get("acm_release_version")
-    os.environ['MCE_RELEASE_VERSION'] = config.get("mce_release_version")
+    os.environ['ACM_RELEASE_VERSION'] = config.get("acm_release_version", "")
+    os.environ['MCE_RELEASE_VERSION'] = config.get("mce_release_version", "")
 
     # Loop through each repo in the config.yaml
     for repo in config.get("components", []):
