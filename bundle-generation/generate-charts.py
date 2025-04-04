@@ -1164,9 +1164,12 @@ def main():
     if not config:
         logging.critical("No charts listed in config to be moved!")
         exit(0)
+        
+    global_acm_version = config.get("acm_release_version")
+    global_mce_version = config.get("mce_release_version")
 
     # Loop through each repo in the config.yaml
-    for repo in config:
+    for repo in config.get("components", []):
         logging.info("Cloning: %s", repo["repo_name"])
         repo_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "tmp/" + repo["repo_name"]) # Path to clone repo to
         if os.path.exists(repo_path): # If path exists, remove and re-clone
