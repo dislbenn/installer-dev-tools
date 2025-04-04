@@ -443,39 +443,28 @@ def insertFlowControlIfAround(lines_list, first_line_index, last_line_index, if_
    lines_list[first_line_index] = "{{- if %s }}\n%s" % (if_condition, lines_list[first_line_index])
    lines_list[last_line_index] = "%s{{- end }}\n" % lines_list[last_line_index]
 
-def is_version_compatible(branch, min_release_version, min_backplane_version, min_ocm_version, enforce_master_check=True):
-    # Extract the version part from the branch name (e.g., '2.12-integration' -> '2.12')
-    pattern = r'(\d+\.\d+)'  # Matches versions like '2.12'
+def is_version_compatible(min_release_version, min_backplane_version):
+    # Retrieve the release versions from environment variables
+    acm_release_version = os.getenv('ACM_RELEASE_VERSION')
+    mce_release_version = os.getenv('MCE_RELEASE_VERSION')
     
-    if branch == "main" or branch == "master":
-        if enforce_master_check:
-            return True
-        else:
-            return False
-    
-    match = re.search(pattern, branch)
-    if match:
-        v = match.group(1)  # Extract the version
-        branch_version = version.Version(v)  # Create a Version object
-        
-        if "release-ocm" in branch:
-            min_branch_version = version.Version(min_ocm_version)  # Use the minimum release version
-        
-        elif "release" in branch:
-            min_branch_version = version.Version(min_release_version)  # Use the minimum release version
+    # Ensure that at least one release version is set (ACM or MCE)
+    if not acm_release_version and not mce_release_version:
+        logging.error("Neither ACM nor MCE release version is set in environment variables.")
+        return False
 
-        elif "backplane" in branch or "mce" in branch:
-            min_branch_version = version.Version(min_backplane_version)  # Use the minimum backplane version
+    if acm_release_version and acm_release_version >= min_release_version:
+        logging.info(f"ACM release version {acm_release_version} meets the minimum required version {min_release_version}.")
+        return True
 
-        else:
-            logging.error(f"Unrecognized branch type for branch: {branch}")
-            return False
-
-        # Check if the branch version is compatible with the specified minimum branch
-        return branch_version >= min_branch_version
+    elif mce_release_version and mce_release_version >= min_backplane_version:
+        logging.info(f"MCE release version {mce_release_version} meets the minimum required version {min_backplane_version}.")
+        return True
 
     else:
+        logging.warning("Neither ACM nor MCE release version meets the required minimum version.")
         return False
+
 
 # injectHelmFlowControl injects advanced helm flow control which would typically make a .yaml file more difficult to parse. This should be called last.
 def injectHelmFlowControl(deployment, branch):
@@ -1164,9 +1153,10 @@ def main():
     if not config:
         logging.critical("No charts listed in config to be moved!")
         exit(0)
-        
-    global_acm_version = config.get("acm_release_version")
-    global_mce_version = config.get("mce_release_version")
+
+    # Set global environment variables
+    os.environ['ACM_RELEASE_VERSION'] = config.get("acm_release_version")
+    os.environ['MCE_RELEASE_VERSION'] = config.get("mce_release_version")
 
     # Loop through each repo in the config.yaml
     for repo in config.get("components", []):
