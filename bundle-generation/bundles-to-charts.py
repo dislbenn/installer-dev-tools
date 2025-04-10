@@ -559,13 +559,13 @@ def copy_webhook_configuration_manifests(dest_helm_chart_path, webhook_path):
                 logging.warning("Skipped empty or invalid YAML content during template processing")
                 continue
 
-            logging.info(manifest)
+            logging.debug("Manifest content: %s", manifest)
 
             # Extract the kind and name from the resource
             kind = yaml_content.get('kind')
             name = yaml_content.get('metadata', {}).get('name')
             if not kind or not name:
-                logging.warning("YAML content is missing a kind or name attribute. Skipping resource processing: '%s'", yaml_content)
+                logging.warning("Skipping resource due to missing 'kind' or 'name' in YAML content")
                 continue
 
             # Generate the new filename based on kind and name
@@ -579,10 +579,13 @@ def copy_webhook_configuration_manifests(dest_helm_chart_path, webhook_path):
 
             # Write the YAML content to the new file
             with open(new_file_path, 'w') as new_file:
+                logging.info("Saving processed resource to file: '%s'", new_file_path)
                 yaml.dump(yaml_content, new_file, default_flow_style=False, sort_keys=True)
 
         except Exception as e:
-            logging.warning(f"Unexpected error occurred while processing yaml content: {e}")
+            logging.error("Unexpected error occurred while processing YAML content: %s", e)
+
+    logging.info("Completed copying webhook configuration files.")
 
 def ensure_webhook_namespace(resource_data, resource_name, default_namespace):
     """
