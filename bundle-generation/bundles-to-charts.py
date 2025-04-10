@@ -45,6 +45,9 @@ def log_header(message, *args):
     # Create a separator line that matches the length of the formatted message
     separator = "=" * len(formatted_message)
 
+    # Log an empty line before the separator and the header
+    logging.info("")
+
     # Log the separator, the formatted message, and the separator again
     logging.info(separator)
     logging.info(formatted_message)
