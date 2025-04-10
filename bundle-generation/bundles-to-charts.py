@@ -353,28 +353,45 @@ def check_unsupported_csv_resources(csv_path, csv_data, supported_config_types):
 
     return False
 
-def escape_template_variables(helmChart, variables):
+def escape_template_variables(helmChart, escaped_variables):
     """_summary_
 
     Args:
         helmChart (_type_): _description_
-        variables (_type_): _description_
+        escaped_variables (_type_): _description_
     """
-    addonTemplates = findTemplatesOfType(helmChart, 'AddOnTemplate')
-    for addonTemplate in addonTemplates:
-        for variable in variables:
-            logging.info("Start to escape vriable %s", variable)
-            at = open(addonTemplate, "r")
-            lines = at.readlines()
+    if not escaped_variables:
+        logging.info("No template variables to escape.")
+        return
+
+    logging.info("Escaping template variables: %s", escaped_variables)
+
+    # Find all AddOnTemplate files in the helm chart
+    addon_templates = findTemplatesOfType(helmChart, 'AddOnTemplate')
+
+    for template in addon_templates:
+        logging.info("Processing template: %s", template)
+
+        for variable in escaped_variables:
+            logging.info("Escaping variable: '%s' in template: '%s'", variable, template)
+
+            with open(template, 'r', encoding='utf-8') as at:
+                lines = at.readlines()
+
+            # Escape each variable in the template
             v = "{{"+variable+"}}"
             for i, line in enumerate(lines):
                 if v in line.strip():
-                    logging.info("Found variable %s in line: %s", v, line.strip())
+                    logging.info("Found variable '%s' in line %d: %s", v, i + 1, line.strip())
+
+                    # Replace the variable with the escaped version
                     lines[i] = line.replace(v, "{{ `"+ v + "` }}")
 
-            a_file = open(addonTemplate, "w")
-            a_file.writelines(lines)
-            a_file.close()
+            with open(template, 'w', encoding='utf-8') as addon_file:
+                addon_file.writelines(lines)
+                
+            logging.info("Escaped variable '%s' in template: '%s'", variable, template)
+
     logging.info("Escaped template variables.\n")
 
 # Adds resources identified in the CSV to the helmchart
@@ -1386,7 +1403,7 @@ def main():
         #   (eg: community-poerators) so the per-operator properties are configured
         #   via the "operators" list.
         #
-        # - Generating the input using a budnle-gen tool.
+        # - Generating the input using a bundle-gen tool.
         #
         #   Entries for this approach include a "gen_command" property specifying
         #   the command to run.  Since we expect that bundle-gen tool is going to gen
@@ -1444,7 +1461,7 @@ def main():
 
         elif "gen_command" in repo:
             try:
-                # repo.brnach specifies the branch or SHA the tool should use for input.
+                # repo.branch specifies the branch or SHA the tool should use for input.
                 # repo.bundlePath specifies the directory into which the bundle manifest
                 # should be generated, and where they are fetched from for chartifying.
 
@@ -1482,19 +1499,24 @@ def main():
             sys.exit(1)
 
         # Loop through each operator in the repo identified by the config
-        for operator in repo["operators"]:
-            logging.info("Helm Chartifying - %s!", operator["name"])
+        for operator in repo.get("operators", []):
+            operator_name = operator.get("name", "")
+
+            if not operator_name:
+                logging.warning("Operator name is required to process chart, skipping")
+                continue
+
+            logging.info("Helm Chartifying - %s!", operator_name)
+
             # Generate and return path to CSV based on bundlePath or bundles-directory
-            bundlepath = getBundleManifestsPath(repo["repo_name"], operator)
+            bundlepath = getBundleManifestsPath(repo_name, operator)
             logging.info("The latest bundle path for channel is %s", bundlepath)
 
-            csvPath = get_csv_path(repo["repo_name"], operator)
+            # Validate the bundlePath exists in config.yaml
+            csvPath = get_csv_path(repo_name, operator)
             if csvPath == "":
-                # Validate the bundlePath exists in config.yaml
                 logging.error("Unable to find given channel: %s", operator.get("channel", "Channel not specified"))
                 sys.exit(1)
-
-            escaped_variables = operator.get("escape-template-variables", [])
 
             # Validate CSV exists
             if not os.path.isfile(csvPath):
@@ -1517,51 +1539,61 @@ def main():
 
             # If preserve_files is provided, keep only those files; otherwise, remove directory and recreate
             if preservedFiles:
-                logging.info("Preserving files for operator '%s': %s", operator["name"], str(preservedFiles))
+                logging.info("Preserving files for operator '%s': %s", operator_name, str(preservedFiles))
 
             # Copy over all CRDs to the destination directory from the manifest folder
-            addCRDs(repo["repo_name"], operator, destination, preservedFiles)
+            addCRDs(repo_name, operator, destination, preservedFiles)
 
             # If name is empty, fail
-            helmChart = operator["name"]
-            if helmChart == "":
+            operator_name = operator.get("name")
+            if operator_name == "":
                 logging.critical("Unable to generate helm chart without a name.")
                 sys.exit(1)
 
-            logging.info("Creating helm chart: '%s' ...", operator["name"])
+            logging.info("Creating helm chart: '%s' ...", operator_name)
             # Template Helm Chart Directory from 'chart-templates'
-            logging.info("Templating helm chart '%s' ...", operator["name"])
+            logging.info("Templating helm chart '%s' ...", operator_name)
 
             # Creates a helm chart template
-            templateHelmChart(destination, operator["name"], preservedFiles)
+            templateHelmChart(destination, operator_name, preservedFiles)
             logging.info("Helm chart template created successfully.\n")
 
             # Generate the Chart.yaml file based off of the CSV
-            helmChart = os.path.join(destination, "charts", "toggle", operator["name"])
-            logging.info("Filling Chart.yaml for helm chart '%s' ...", operator["name"])
-            fillChartYaml(helmChart, operator["name"], csvPath)
+            helm_chart_path = os.path.join(destination, "charts", "toggle", operator_name)
+            logging.info("Filling Chart.yaml for helm chart '%s' ...", operator_name)
+            fillChartYaml(helm_chart_path, operator_name, csvPath)
             logging.info("Chart.yaml filled successfully.\n")
 
             # Add all basic resources to the helm chart from the CSV
-            logging.info("Adding Resources from CSV to helm chart '%s' ...", operator["name"])
-            extract_csv_resources(helmChart, csvPath)
-            copy_additional_resources(helmChart, csvPath)
+            logging.info("Adding Resources from CSV to helm chart '%s' ...", operator_name)
+            extract_csv_resources(helm_chart_path, csvPath)
+            copy_additional_resources(helm_chart_path, csvPath)
 
             # In ACM 2.12+ we need to handle webhooks for components, so it's necessary to verify if any webhook paths
             # are available and include manifest files for processing.
             webhook_paths = operator.get("webhook_paths", [])
-            if webhook_paths is not None:
+            if webhook_paths:
                 for path in webhook_paths:
-                    copy_webhook_configuration_manifests(helmChart, os.path.join(SCRIPT_DIR, "tmp", repo_name, path))
+                    webhook_path = os.path.join(SCRIPT_DIR, "tmp", repo_name, path)
+                    logging.info("Processing webhook path: '%s'", webhook_path)
+                    copy_webhook_configuration_manifests(helm_chart_path, webhook_path)
+            else:
+                logging.info("No webhook paths to process")
 
-            escape_template_variables(helmChart, escaped_variables)
+            # Starting with ACM 2.13+ and MCE 2.4+, support was added for AddOnTemplate resources that require 
+            # specific template variables in their Helm chart files. To prevent Helm from rendering these variables 
+            # immediately, we escape them, allowing another component to process and render them later.
+            escaped_variables = operator.get("escape-template-variables", [])
+            if escaped_variables:
+                escape_template_variables(helm_chart_path, escaped_variables)
+
             logging.info("Resources added from CSV successfully.\n")
 
             if not skipOverrides:
-                logging.info("Adding Overrides to helm chart '%s' (set --skipOverrides=true to skip) ...", operator["name"])
+                logging.info("Adding Overrides to helm chart '%s' (set --skipOverrides=true to skip) ...", operator_name)
                 exclusions = operator["exclusions"] if "exclusions" in operator else []
-                injectRequirements(helmChart, operator, exclusions, sizes, branch)
-                logging.info("Overrides added to helm chart '%s' successfully.", operator["name"])
+                injectRequirements(helm_chart_path, operator, exclusions, sizes, branch)
+                logging.info("Overrides added to helm chart '%s' successfully.", operator_name)
 
     logging.info("All repositories and operators processed successfully.")
     logging.info("Performing cleanup...")
