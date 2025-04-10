@@ -1138,6 +1138,7 @@ def main():
     parser.set_defaults(lint=False)
 
     args = parser.parse_args()
+    component = args.component
     skipOverrides = args.skipOverrides
     destination = args.destination
     lint = args.lint
@@ -1160,6 +1161,9 @@ def main():
     # Set global environment variables
     os.environ['ACM_RELEASE_VERSION'] = config.get('acm_release_version', '')
     os.environ['MCE_RELEASE_VERSION'] = config.get('mce_release_version', '')
+    
+    if component:
+        config["components"] = [repo for repo in config["components"] if repo["repo_name"] == component]
 
     # Loop through each repo in the config.yaml
     for repo in config.get("components", []):
