@@ -551,15 +551,15 @@ def copy_webhook_configuration_manifests(dest_helm_chart_path, webhook_path):
 
     # Split the content by '---' if it's a multi-document YAML file
     output = content.split('---')
-    for _, doc in enumerate(output):
+    for _, manifest in enumerate(output):
         try:
             # Load the YAML content of the document
-            yaml_content = yaml.safe_load(doc)
+            yaml_content = yaml.safe_load(manifest)
             if yaml_content is None:
                 logging.warning("Skipped empty or invalid YAML content during template processing")
                 continue
 
-            logging.info(yaml_content)
+            logging.info(manifest)
 
             # Extract the kind and name from the resource
             kind = yaml_content.get('kind')
