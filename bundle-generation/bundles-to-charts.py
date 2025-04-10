@@ -538,7 +538,7 @@ def copy_webhook_configuration_manifests(dest_helm_chart_path, webhook_path):
         dest_helm_chart_path (_type_): _description_
         webhook_path (_type_): _description_
     """
-    logging.info("Copying webhook configuration resources from the repo if present ...")
+    log_header("Copying webhook configuration files to Helm chart destination ...")
 
     # Check if webhook_path itself is a directory
     if not os.path.exists(webhook_path) or not os.path.isfile(webhook_path):
