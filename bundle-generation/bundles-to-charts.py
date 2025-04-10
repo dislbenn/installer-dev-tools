@@ -31,6 +31,18 @@ coloredlogs.install(level='DEBUG')  # Set the logging level as needed
 # Config Constants
 SCRIPT_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)))
 
+def log_header(message):
+    """
+    Logs a header message with visual separators.
+
+    Args:
+        message (str): The message to be displayed as the header.
+    """
+    logging.info("=" * 40)  # Print a line of '=' for visual separation
+    logging.info(message)    # Log the provided message
+    logging.info("=" * 40)  # Print a line of '=' for visual separation
+
+
 # Split a string at a specified delimiter.  If delimiter doesn't exist, consider the
 # string to be all "left-part" (before delimiter) or "right-part" as requested.
 def split_at(the_str, the_delim, favor_right=True):
@@ -369,7 +381,7 @@ def escape_template_variables(helm_chart_path, escaped_variables):
         logging.info("No template variables to escape.")
         return
 
-    logging.info("Escaping template variables: %s", escaped_variables)
+    log_header("Escaping template variables: %s", escaped_variables)
 
     for template in find_templates_of_type(helm_chart_path, 'AddOnTemplate'):
         logging.info("Processing template: %s", template)
