@@ -552,7 +552,6 @@ def copy_webhook_configuration_manifests(dest_helm_chart_path, webhook_path):
     # Split the content by '---' if it's a multi-document YAML file
     output = content.split('---')
     for _, doc in enumerate(output):
-        logging.info(f"doc: {doc}")
         try:
             # Load the YAML content of the document
             yaml_content = yaml.safe_load(doc)
@@ -560,10 +559,11 @@ def copy_webhook_configuration_manifests(dest_helm_chart_path, webhook_path):
                 logging.warning("Skipped empty or invalid YAML content during template processing")
                 continue
 
+            logging.info(yaml_content)
+
             # Extract the kind and name from the resource
             kind = yaml_content.get('kind')
             name = yaml_content.get('metadata', {}).get('name')
-
             if not kind or not name:
                 logging.warning("YAML content is missing a kind or name attribute. Skipping resource processing: '%s'", yaml_content)
                 continue
