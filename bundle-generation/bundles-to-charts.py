@@ -373,8 +373,6 @@ def escape_template_variables(helmChart, escaped_variables):
         logging.info("Processing template: %s", template)
 
         for variable in escaped_variables:
-            logging.info("Escaping variable: '%s' in template: '%s'", variable, template)
-
             with open(template, 'r', encoding='utf-8') as at:
                 lines = at.readlines()
 
@@ -389,8 +387,6 @@ def escape_template_variables(helmChart, escaped_variables):
 
             with open(template, 'w', encoding='utf-8') as addon_file:
                 addon_file.writelines(lines)
-                
-            logging.info("Escaped variable '%s' in template: '%s'", variable, template)
 
     logging.info("Escaped template variables.\n")
 
