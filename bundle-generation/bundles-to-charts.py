@@ -353,12 +353,17 @@ def check_unsupported_csv_resources(csv_path, csv_data, supported_config_types):
 
     return False
 
-def escape_template_variables(helmChart, escaped_variables):
-    """_summary_
+def escape_template_variables(helm_chart_path, escaped_variables):
+    """
+    Escapes template variables in AddOnTemplate files within a Helm chart.
+
+    This function searches for the specified variables within the AddOnTemplate files
+    in the given Helm chart path and escapes them by replacing the variable syntax with
+    the Helm-escaped format.
 
     Args:
-        helmChart (_type_): _description_
-        escaped_variables (_type_): _description_
+        helm_chart_path (str): The file path to the Helm chart directory containing templates.
+        escaped_variables (list): A list of template variable names to be escaped within the templates.
     """
     if not escaped_variables:
         logging.info("No template variables to escape.")
@@ -366,10 +371,7 @@ def escape_template_variables(helmChart, escaped_variables):
 
     logging.info("Escaping template variables: %s", escaped_variables)
 
-    # Find all AddOnTemplate files in the helm chart
-    addon_templates = findTemplatesOfType(helmChart, 'AddOnTemplate')
-
-    for template in addon_templates:
+    for template in find_templates_of_type(helm_chart_path, 'AddOnTemplate'):
         logging.info("Processing template: %s", template)
 
         for variable in escaped_variables:
@@ -616,7 +618,7 @@ def update_helm_resources(chartName, helmChart, skip_rbac_overrides, exclusions,
     ]
 
     for kind in resource_kinds:
-        resource_templates = findTemplatesOfType(helmChart, kind)
+        resource_templates = find_templates_of_type(helmChart, kind)
         if not resource_templates:
             logging.info("------------------------------------------")
             logging.warning(f"No {kind} templates found in the Helm chart [Skipping]")
@@ -671,7 +673,7 @@ def update_helm_resources(chartName, helmChart, skip_rbac_overrides, exclusions,
     logging.info("Resource updating process completed.")
 
 # Given a resource Kind, return all filepaths of that resource type in a chart directory
-def findTemplatesOfType(helmChart, kind):
+def find_templates_of_type(helmChart, kind):
     """_summary_
 
     Args:
@@ -707,7 +709,7 @@ def fixEnvVarImageReferences(helmChart, imageKeyMapping):
     valuesYaml = os.path.join(helmChart, "values.yaml")
     with open(valuesYaml, 'r', encoding='utf-8') as f:
         values = yaml.safe_load(f)
-    deployments = findTemplatesOfType(helmChart, 'Deployment')
+    deployments = find_templates_of_type(helmChart, 'Deployment')
 
     imageKeys = []
     for deployment in deployments:
@@ -754,7 +756,7 @@ def fixImageReferences(helmChart, imageKeyMapping):
     with open(valuesYaml, 'r', encoding='utf-8') as f:
         values = yaml.safe_load(f)
 
-    deployments = findTemplatesOfType(helmChart, 'Deployment')
+    deployments = find_templates_of_type(helmChart, 'Deployment')
     imageKeys = []
     temp = "" ## temporarily read image ref
     for deployment in deployments:
@@ -974,7 +976,7 @@ def updateDeployments(helmChart, operator, exclusions, sizes, branch):
     deploySpecYaml = os.path.join(os.path.dirname(os.path.realpath(__file__)), "chart-templates/templates/deploymentspec.yaml")
     with open(deploySpecYaml, 'r', encoding='utf-8') as f:
         deploySpec = yaml.safe_load(f)
-    deployments = findTemplatesOfType(helmChart, 'Deployment')
+    deployments = find_templates_of_type(helmChart, 'Deployment')
     for deployment in deployments:
         with open(deployment, 'r', encoding='utf-8') as f:
             deploy = yaml.safe_load(f)
@@ -1062,10 +1064,10 @@ def updateRBAC(helmChart):
         helmChart (_type_): _description_
     """
     logging.info("Updating clusterroles, roles, clusterrolebindings, and rolebindings ...")
-    clusterroles = findTemplatesOfType(helmChart, 'ClusterRole')
-    roles = findTemplatesOfType(helmChart, 'Role')
-    clusterrolebindings = findTemplatesOfType(helmChart, 'ClusterRoleBinding')
-    rolebindings = findTemplatesOfType(helmChart, 'RoleBinding')
+    clusterroles = find_templates_of_type(helmChart, 'ClusterRole')
+    roles = find_templates_of_type(helmChart, 'Role')
+    clusterrolebindings = find_templates_of_type(helmChart, 'ClusterRoleBinding')
+    rolebindings = find_templates_of_type(helmChart, 'RoleBinding')
 
     for rbacFile in clusterroles + roles + clusterrolebindings + rolebindings:
         with open(rbacFile, 'r', encoding='utf-8') as f:
@@ -1266,7 +1268,7 @@ def injectAnnotationsForAddonTemplate(helmChart):
     """
     logging.info("Injecting Annotations for deployments in the AddonTemplate ...")
 
-    addonTemplates = findTemplatesOfType(helmChart, 'AddOnTemplate')
+    addonTemplates = find_templates_of_type(helmChart, 'AddOnTemplate')
     for addonTemplate in addonTemplates:
         injected = False
         with open(addonTemplate, 'r', encoding='utf-8') as f:
@@ -1304,7 +1306,7 @@ def fixImageReferencesForAddonTemplate(helmChart, imageKeyMapping):
     """
     logging.info("Fixing image references in addon templates and values.yaml ...")
 
-    addonTemplates = findTemplatesOfType(helmChart, 'AddOnTemplate')
+    addonTemplates = find_templates_of_type(helmChart, 'AddOnTemplate')
     imageKeys = []
     temp = "" ## temporarily read image ref
     for addonTemplate in addonTemplates:
