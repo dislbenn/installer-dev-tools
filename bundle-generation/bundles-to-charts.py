@@ -563,9 +563,9 @@ def copy_webhook_configuration_manifests(dest_helm_chart_path, webhook_path):
             kind = yaml_content.get('kind')
             name = yaml_content.get('metadata', {}).get('name')
 
-            # if not kind or not name:
-            logging.warning(
-                f"YAML content is missing a kind or name attribute. Skipping resource processing: {yaml_content}")
+            if not kind or not name:
+                logging.warning("YAML content is missing a kind or name attribute. Skipping resource processing: '%s'", yaml_content)
+                continue
 
             # Generate the new filename based on kind and name
             new_filename = f"{name.lower()}-{kind.lower()}.yaml"
