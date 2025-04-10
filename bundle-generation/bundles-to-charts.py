@@ -552,6 +552,7 @@ def copy_webhook_configuration_manifests(dest_helm_chart_path, webhook_path):
     # Split the content by '---' if it's a multi-document YAML file
     output = content.split('---')
     for _, doc in enumerate(output):
+        logging.info(f"doc: {doc}")
         try:
             # Load the YAML content of the document
             yaml_content = yaml.safe_load(doc)
