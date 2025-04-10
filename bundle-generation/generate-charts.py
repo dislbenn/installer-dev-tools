@@ -267,13 +267,17 @@ def copyHelmChart(destinationChartPath, repo, chart, chartVersion, branch):
 
     overwriteValues = os.path.join(os.path.dirname(os.path.realpath(__file__)), "chart-values", chart['name'], "overwriteValues.yaml")
     specificValues = os.path.join(os.path.dirname(os.path.realpath(__file__)), "chart-values", chart['name'], "values.yaml")
-    if os.path.exists(overwriteValues) or os.path.exists(specificValues):
-        logging.info(f"Using specific values.yaml for chart '{chartName}' from: {specificValues}")
-        if is_version_compatible('2.14', '2.9'):
+    
+    if is_version_compatible('2.14', '2.9'):
+        if os.path.exists(overwriteValues):
+            logging.info(f"Using overwrite values.yaml for chart '{chartName}' from: {overwriteValues}")
             updateValues(overwriteValues, os.path.join(chartPath, "values.yaml"))
         else:
-            shutil.copyfile(specificValues, os.path.join(chartPath, "values.yaml"))
+            logging.warning(f"Version compatible but overwrite values.yaml not found for chart '{chartName}'")
 
+    elif os.path.exists(specificValues):
+        logging.info(f"Using specific values.yaml for chart '{chartName}' from: {specificValues}")
+        shutil.copyfile(specificValues, os.path.join(chartPath, "values.yaml"))
 
     else:
         logging.warning(f"No specific values.yaml found for chart '{chartName}'")
