@@ -1131,6 +1131,7 @@ def renderChart(chart_path):
 def main():
     ## Initialize ArgParser
     parser = argparse.ArgumentParser()
+    parser.add_argument("--component", dest="component", type=str, required=False, help="If provided, only this component will be processed")
     parser.add_argument("--destination", dest="destination", type=str, required=False, help="Destination directory of the created helm chart")
     parser.add_argument("--skipOverrides", dest="skipOverrides", type=bool, help="If true, overrides such as helm flow control will not be applied")
     parser.add_argument("--lint", dest="lint", action='store_true', help="If true, bundles will only be linted to ensure they can be transformed successfully. Default is False.")
