@@ -39,10 +39,16 @@ def log_header(message, *args):
         message (str): The message to be displayed as the header.
         *args: Additional arguments to be passed into the message string.
     """
-    formatted_message = message.format(*args)  # Use string formatting for multiple arguments
-    logging.info("=" * 40)  # Print a line of '=' for visual separation
-    logging.info(formatted_message)    # Log the provided message
-    logging.info("=" * 40)  # Print a line of '=' for visual separation
+    # Format the message with the provided arguments
+    formatted_message = message.format(*args)
+
+    # Create a separator line that matches the length of the formatted message
+    separator = "=" * len(formatted_message)
+
+    # Log the separator, the formatted message, and the separator again
+    logging.info(separator)
+    logging.info(formatted_message)
+    logging.info(separator)
 
 
 # Split a string at a specified delimiter.  If delimiter doesn't exist, consider the
