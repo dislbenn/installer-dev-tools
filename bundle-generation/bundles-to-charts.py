@@ -31,15 +31,17 @@ coloredlogs.install(level='DEBUG')  # Set the logging level as needed
 # Config Constants
 SCRIPT_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)))
 
-def log_header(message):
+def log_header(message, *args):
     """
-    Logs a header message with visual separators.
+    Logs a header message with visual separators and formats the message using multiple arguments.
 
     Args:
         message (str): The message to be displayed as the header.
+        *args: Additional arguments to be passed into the message string.
     """
+    formatted_message = message.format(*args)  # Use string formatting for multiple arguments
     logging.info("=" * 40)  # Print a line of '=' for visual separation
-    logging.info(message)    # Log the provided message
+    logging.info(formatted_message)    # Log the provided message
     logging.info("=" * 40)  # Print a line of '=' for visual separation
 
 
@@ -381,7 +383,7 @@ def escape_template_variables(helm_chart_path, escaped_variables):
         logging.info("No template variables to escape.")
         return
 
-    log_header("Escaping template variables: %s", escaped_variables)
+    log_header("Escaping template variables: {}", escaped_variables)
 
     for template in find_templates_of_type(helm_chart_path, 'AddOnTemplate'):
         logging.info("Processing template: %s", template)
