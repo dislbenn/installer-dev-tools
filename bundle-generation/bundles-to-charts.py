@@ -1425,6 +1425,7 @@ def main():
 
     ## Initialize ArgParser
     parser = argparse.ArgumentParser()
+    parser.add_argument("--component", dest="component", type=str, required=False, help="If provided, only this component will be processed")
     parser.add_argument("--destination", dest="destination", type=str, required=False, help="Destination directory of the created helm chart")
     parser.add_argument("--skipOverrides", dest="skipOverrides", type=bool, help="If true, overrides such as helm flow control will not be applied")
     parser.add_argument("--lint", dest="lint", action='store_true', help="If true, bundles will only be linted to ensure they can be transformed successfully. Default is False.")
@@ -1432,6 +1433,7 @@ def main():
     parser.set_defaults(lint=False)
 
     args = parser.parse_args()
+    component = args.component
     destination = args.destination
     skipOverrides = args.skipOverrides
     lint = args.lint
@@ -1457,8 +1459,15 @@ def main():
         logging.critical("Unexpected error while loading configuration '%s'", config_yaml)
         sys.exit(1)
 
+
+    # Normalize: if "components" key exists, use it; else assume config itself is the list
+    components = config.get("components", config if isinstance(config, list) else [])
+
+    if component:
+        config["components"] = [repo for repo in config["components"] if repo["repo_name"] == component]
+
     # Loop through each repo in the config.yaml
-    for repo in config:
+    for repo in components:
         # We support two ways of getting bundle input:
         #
         # - Picking up already generated input from a Github repo

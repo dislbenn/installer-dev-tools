@@ -1229,16 +1229,19 @@ def renderChart(chart_path):
 def main():
     ## Initialize ArgParser
     parser = argparse.ArgumentParser()
+    parser.add_argument("--component", dest="component", type=str, required=False, help="If provided, only this component will be processed")
     parser.add_argument("--destination", dest="destination", type=str, required=False, help="Destination directory of the created helm chart")
     parser.add_argument("--skipOverrides", dest="skipOverrides", type=bool, help="If true, overrides such as helm flow control will not be applied")
     parser.add_argument("--lint", dest="lint", action='store_true', help="If true, bundles will only be linted to ensure they can be transformed successfully. Default is False.")
+
     parser.set_defaults(skipOverrides=False)
     parser.set_defaults(lint=False)
 
     args = parser.parse_args()
-    skipOverrides = args.skipOverrides
+    component = args.component
     destination = args.destination
     lint = args.lint
+    skipOverrides = args.skipOverrides
 
     if lint == False and not destination:
         logging.critical("Destination directory is required when not linting.")
@@ -1255,8 +1258,14 @@ def main():
         logging.critical("No charts listed in config to be moved!")
         exit(0)
 
+    # Normalize: if "components" key exists, use it; else assume config itself is the list
+    components = config.get("components", config if isinstance(config, list) else [])
+
+    if component:
+        config["components"] = [repo for repo in config["components"] if repo["repo_name"] == component]
+
     # Loop through each repo in the config.yaml
-    for repo in config:
+    for repo in components:
         logging.info("Cloning: %s", repo["repo_name"])
         repo_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "tmp/" + repo["repo_name"]) # Path to clone repo to
         if os.path.exists(repo_path): # If path exists, remove and re-clone
