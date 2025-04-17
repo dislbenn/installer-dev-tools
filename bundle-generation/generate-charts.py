@@ -1258,6 +1258,9 @@ def main():
         logging.critical("No charts listed in config to be moved!")
         exit(0)
 
+    logging.info(f"component: {component}")
+    exit(0)
+
     # Normalize: if "components" key exists, use it; else assume config itself is the list
     if isinstance(config, dict):
         components = config.get("components", [])
