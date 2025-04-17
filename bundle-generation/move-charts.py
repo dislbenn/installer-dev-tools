@@ -13,11 +13,10 @@ from git import Repo, exc
 
 from validate_csv import *
 
-# Copy chart-templates to a new helmchart directory
-import os
-import shutil
-import logging
+# Config Constants
+SCRIPT_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)))
 
+# Copy chart-templates to a new helmchart directory
 def copyHelmChart(destinationChartPath, repo, chart):
     chartName = chart['name']
     logging.info(f"Copying templates into new {chartName} chart directory ...")
@@ -104,17 +103,19 @@ def main():
     ## Initialize ArgParser
     parser = argparse.ArgumentParser()
     parser.add_argument("--component", dest="component", type=str, required=False, help="If provided, only this component will be processed")
+    parser.add_argument("--config", dest="config", type=str, required=False, help="If provided, this config file will be processed")
     parser.add_argument("--destination", dest="destination", type=str, required=False, help="Destination directory of the created helm chart")
 
     args = parser.parse_args()
     component = args.component
+    config_override = args.config
     destination = args.destination
 
     logging.basicConfig(level=logging.DEBUG)
 
     # Config.yaml holds the configurations for Operator bundle locations to be used
-    configYaml = os.path.join(os.path.dirname(os.path.realpath(__file__)), "copy-config.yaml")
-    with open(configYaml, 'r') as f:
+    config_yaml = os.path.join(SCRIPT_DIR, config_override or "copy-config.yaml")
+    with open(config_yaml, 'r') as f:
         config = yaml.safe_load(f)
 
     # Normalize config into a list of components

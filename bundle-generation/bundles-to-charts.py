@@ -1426,6 +1426,7 @@ def main():
     ## Initialize ArgParser
     parser = argparse.ArgumentParser()
     parser.add_argument("--component", dest="component", type=str, required=False, help="If provided, only this component will be processed")
+    parser.add_argument("--config", dest="config", type=str, required=False, help="If provided, this config file will be processed")
     parser.add_argument("--destination", dest="destination", type=str, required=False, help="Destination directory of the created helm chart")
     parser.add_argument("--skipOverrides", dest="skipOverrides", type=bool, help="If true, overrides such as helm flow control will not be applied")
     parser.add_argument("--lint", dest="lint", action='store_true', help="If true, bundles will only be linted to ensure they can be transformed successfully. Default is False.")
@@ -1434,6 +1435,7 @@ def main():
 
     args = parser.parse_args()
     component = args.component
+    config_override = args.config
     destination = args.destination
     skipOverrides = args.skipOverrides
     lint = args.lint
@@ -1444,7 +1446,7 @@ def main():
 
     # Load configuration file
     # config.yaml holds the configurations for Operator bundle locations to be used
-    config_yaml = os.path.join(SCRIPT_DIR, "config.yaml")
+    config_yaml = os.path.join(SCRIPT_DIR, config_override or "config.yaml")
 
     if not os.path.exists(config_yaml):
         logging.critical("Configuration file '%s' not found. Exiting.", config_yaml)

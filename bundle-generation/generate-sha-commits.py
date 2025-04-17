@@ -18,6 +18,9 @@ from git import Repo
 # Configure logging with coloredlogs
 coloredlogs.install(level='DEBUG')  # Set the logging level as needed
 
+# Config Constants
+SCRIPT_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)))
+
 def save_yaml(file_path, yaml_data):
     """
     Save YAML data to a file.
@@ -107,26 +110,21 @@ def main():
     logging.info("Starting Pipeline Manifest Sha Sync script...")
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--org", dest="org", default="stolostron", required=False, type=str,
-                        help="Organization of the repository")
-
-    parser.add_argument("--repo", dest="repo", required=True, type=str,
-                        help="Destination repository of the pipeline manifest")
-
-    parser.add_argument("--branch", dest="branch", required=True, type=str,
-                        help="Target branch of the pipeline manifest")
-
-    parser.add_argument("--component", dest="component", type=str, required=False,
-                        help="If provided, only this component will be processed")
+    parser.add_argument("--org", dest="org", default="stolostron", required=False, type=str, help="Organization of the repository")
+    parser.add_argument("--repo", dest="repo", required=True, type=str, help="Destination repository of the pipeline manifest")
+    parser.add_argument("--branch", dest="branch", required=True, type=str, help="Target branch of the pipeline manifest")
+    parser.add_argument("--component", dest="component", type=str, required=False, help="If provided, only this component will be processed")
+    parser.add_argument("--config", dest="config", type=str, required=False, help="If provided, this config file will be processed")
 
     # Parse the command line arguments.
     args = parser.parse_args()
     component = args.component
+    config_override = args.config
 
     # Load configuration
-    configYaml = os.path.join(os.path.dirname(os.path.realpath(__file__)), "config.yaml")
-    logging.info("Loading configuration from: %s" % configYaml)
-    with open(configYaml, 'r') as f:
+    config_yaml = os.path.join(SCRIPT_DIR, config_override or "config.yaml")
+    logging.info("Loading configuration from: %s" % config_yaml)
+    with open(config_yaml, 'r') as f:
         config = yaml.safe_load(f)
 
     # Clone pipeline repository into temporary directory path.
@@ -174,7 +172,7 @@ def main():
                 if entry.get("image-name") == repo.get("repo_name") and entry.get("git-sha256") != repo.get("sha"):
                     found_match = True
                     logging.warning(f"Sha mismatch for repository {repo.get('repo_name')}: YAML sha {repo.get('sha')}, JSON sha {entry.get('git-sha256')}")
-                    update_yaml_field(configYaml, repo.get("repo_name"), entry.get("git-sha256"))
+                    update_yaml_field(config_yaml, repo.get("repo_name"), entry.get("git-sha256"))
                     break
 
             if not found_match:
