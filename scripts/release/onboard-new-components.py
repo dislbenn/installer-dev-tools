@@ -30,7 +30,7 @@ def collect_olm_operators():
     while True:
         print("\n--- Add an OLM Operator ---")
         name = prompt_user("Enter the operator name", required=True)
-        bundle_path = prompt_user("Enter the bundle path (relative to the repo)", required=True, example="bundles/manifests/")
+        bundle_path = prompt_user("Enter the bundle path (relative to the repo)", required=True, example="bundle/manifests/")
         image_mappings = collect_image_mappings()
         exclusions = collect_exclusions_or_inclusions("exclusions", get_exclusion_options())
         inclusions = collect_exclusions_or_inclusions("inclusions", get_inclusion_options())
@@ -75,7 +75,7 @@ def collect_helm_charts():
     while True:
         print("\n--- Add a Helm Chart ---")
         name = prompt_user("Enter the chart name", required=True)
-        chart_path = prompt_user("Enter the chart path (relative to the repo)", required=True)
+        chart_path = prompt_user("Enter the chart path (relative to the repo)", required=True, example="charts/")
         always_or_toggle = collect_toggle_setting()
         image_mappings = collect_image_mappings()
         exclusions = collect_exclusions_or_inclusions("exclusions", get_exclusion_options())
