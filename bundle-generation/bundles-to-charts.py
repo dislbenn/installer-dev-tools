@@ -1444,9 +1444,12 @@ def main():
         logging.critical("Destination directory is required when not linting.")
         sys.exit(1)
 
+    logging.info(f"config_override {config_override}")
+
     # Load configuration file
     # config.yaml holds the configurations for Operator bundle locations to be used
     config_yaml = os.path.join(SCRIPT_DIR, config_override or "config.yaml")
+    logging.info(f"config_yaml {config_yaml}")
 
     if not os.path.exists(config_yaml):
         logging.critical("Configuration file '%s' not found. Exiting.", config_yaml)
