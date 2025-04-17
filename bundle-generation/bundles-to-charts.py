@@ -1459,9 +1459,6 @@ def main():
         logging.critical("Unexpected error while loading configuration '%s'", config_yaml)
         sys.exit(1)
 
-    logging.info(f"component: {component}")
-    exit(0)
-
     # Normalize config into a list of components
     if isinstance(config, dict):
         components = config.get("components", [])
