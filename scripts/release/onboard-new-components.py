@@ -393,10 +393,7 @@ def onboarding_new_component(config_file, onboarding_type):
         component_entry["charts"] = collect_helm_charts()
 
     # Add new component entries to onboard-request config
-    if "components" not in config:
-        config["components"] = [component_entry]
-    else:
-        config["components"].append(component_entry)
+    config["components"] = [component_entry]
 
     # Save the updated YAML
     utils.common.save_yaml(config_file, config)
