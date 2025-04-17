@@ -1265,7 +1265,7 @@ def main():
         logging.info("in here")
         components = config.get("components", [])
     else:
-        logging.info("in here")
+        logging.info("over here")
         components = config  # If it's already a list, use it directly
 
     if component:
