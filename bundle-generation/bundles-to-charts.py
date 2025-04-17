@@ -1462,15 +1462,15 @@ def main():
     logging.info(f"component: {component}")
     exit(0)
 
-    # Normalize: if "components" key exists, use it; else assume config itself is the list
+    # Normalize config into a list of components
     if isinstance(config, dict):
         components = config.get("components", [])
     else:
-        components = config  # If it's already a list, use it directly
+        components = config
 
+    # Optionally filter by a specific component
     if component:
-        logging.info("in here")
-        config["components"] = [repo for repo in config["components"] if repo["repo_name"] == component]
+        components = [repo for repo in components if repo.get("repo_name") == component]
 
     # Loop through each repo in the config.yaml
     for repo in components:

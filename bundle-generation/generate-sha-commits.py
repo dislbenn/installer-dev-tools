@@ -121,6 +121,7 @@ def main():
 
     # Parse the command line arguments.
     args = parser.parse_args()
+    component = args.component
 
     # Load configuration
     configYaml = os.path.join(os.path.dirname(os.path.realpath(__file__)), "config.yaml")
@@ -153,7 +154,17 @@ def main():
     logging.info("Reading manifest data from file: %s" % manifest_file_path)
     manifest_data = read_json_file(manifest_file_path)
 
-    for repo in config:
+    # Normalize config into a list of components
+    if isinstance(config, dict):
+        components = config.get("components", [])
+    else:
+        components = config
+
+    # Optionally filter by a specific component
+    if component:
+        components = [repo for repo in components if repo.get("repo_name") == component]
+
+    for repo in components:
         if "sha" in repo and "repo_name" in repo:
             logging.info("Checking repository for updates: %s" % repo.get("repo_name"))
             found_match = False

@@ -117,8 +117,18 @@ def main():
     with open(configYaml, 'r') as f:
         config = yaml.safe_load(f)
 
+    # Normalize config into a list of components
+    if isinstance(config, dict):
+        components = config.get("components", [])
+    else:
+        components = config
+
+    # Optionally filter by a specific component
+    if component:
+        components = [repo for repo in components if repo.get("repo_name") == component]
+
     # Loop through each repo in the config.yaml
-    for repo in config:
+    for repo in components:
         logging.info("Cloning: %s", repo["repo_name"])
         repo_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "tmp/" + repo["repo_name"]) # Path to clone repo to
         if os.path.exists(repo_path): # If path exists, remove and re-clone
