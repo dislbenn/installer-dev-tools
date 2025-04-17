@@ -408,7 +408,7 @@ def main():
     ]
     answer = inquirer.prompt(question)
 
-    config_file = f"onboard-request-{answer["type"]}.yaml"
+    config_file = "onboard-request.yaml"
     onboarding_new_component(config_file, answer["type"])
 
 if __name__ == "__main__":
