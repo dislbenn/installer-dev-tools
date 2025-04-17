@@ -1466,6 +1466,7 @@ def main():
         components = config  # If it's already a list, use it directly
 
     if component:
+        logging.info("in here")
         config["components"] = [repo for repo in config["components"] if repo["repo_name"] == component]
 
     # Loop through each repo in the config.yaml
