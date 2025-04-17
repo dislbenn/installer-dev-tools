@@ -103,9 +103,11 @@ def chartConfigAcceptable(chart):
 def main():
     ## Initialize ArgParser
     parser = argparse.ArgumentParser()
+    parser.add_argument("--component", dest="component", type=str, required=False, help="If provided, only this component will be processed")
     parser.add_argument("--destination", dest="destination", type=str, required=False, help="Destination directory of the created helm chart")
 
     args = parser.parse_args()
+    component = args.component
     destination = args.destination
 
     logging.basicConfig(level=logging.DEBUG)

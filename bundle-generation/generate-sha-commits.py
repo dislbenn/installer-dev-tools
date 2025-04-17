@@ -116,6 +116,9 @@ def main():
     parser.add_argument("--branch", dest="branch", required=True, type=str,
                         help="Target branch of the pipeline manifest")
 
+    parser.add_argument("--component", dest="component", type=str, required=False,
+                        help="If provided, only this component will be processed")
+
     # Parse the command line arguments.
     args = parser.parse_args()
 
