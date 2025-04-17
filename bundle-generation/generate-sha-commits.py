@@ -20,6 +20,7 @@ coloredlogs.install(level='DEBUG')  # Set the logging level as needed
 
 # Config Constants
 SCRIPT_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)))
+ROOT_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, "..", ".."))
 
 def save_yaml(file_path, yaml_data):
     """
@@ -122,7 +123,18 @@ def main():
     config_override = args.config
 
     # Load configuration
-    config_yaml = os.path.join(SCRIPT_DIR, config_override or "config.yaml")
+    # Config.yaml holds the configurations for Operator bundle locations to be used
+    if config_override:
+        root_override_path = os.path.join(ROOT_DIR, config_override)
+        script_override_path = os.path.join(SCRIPT_DIR, config_override)
+
+        if os.path.exists(root_override_path):
+            config_yaml = root_override_path
+        else:
+            config_yaml = script_override_path
+    else:
+        config_yaml = os.path.join(SCRIPT_DIR, "config.yaml")
+
     logging.info("Loading configuration from: %s" % config_yaml)
     with open(config_yaml, 'r') as f:
         config = yaml.safe_load(f)

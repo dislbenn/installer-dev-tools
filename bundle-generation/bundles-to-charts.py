@@ -30,6 +30,7 @@ coloredlogs.install(level='DEBUG')  # Set the logging level as needed
 
 # Config Constants
 SCRIPT_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)))
+ROOT_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, "..", ".."))
 
 def log_header(message, *args):
     """
@@ -1448,7 +1449,17 @@ def main():
 
     # Load configuration file
     # config.yaml holds the configurations for Operator bundle locations to be used
-    config_yaml = os.path.join(SCRIPT_DIR, config_override or "config.yaml")
+    if config_override:
+        root_override_path = os.path.join(ROOT_DIR, config_override)
+        script_override_path = os.path.join(SCRIPT_DIR, config_override)
+
+        if os.path.exists(root_override_path):
+            config_yaml = root_override_path
+        else:
+            config_yaml = script_override_path
+    else:
+        config_yaml = os.path.join(SCRIPT_DIR, "config.yaml")
+
     logging.info(f"config_yaml {config_yaml}")
 
     if not os.path.exists(config_yaml):

@@ -15,6 +15,7 @@ from validate_csv import *
 
 # Config Constants
 SCRIPT_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)))
+ROOT_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, "..", ".."))
 
 # Copy chart-templates to a new helmchart directory
 def copyHelmChart(destinationChartPath, repo, chart):
@@ -114,7 +115,17 @@ def main():
     logging.basicConfig(level=logging.DEBUG)
 
     # Config.yaml holds the configurations for Operator bundle locations to be used
-    config_yaml = os.path.join(SCRIPT_DIR, config_override or "copy-config.yaml")
+    if config_override:
+        root_override_path = os.path.join(ROOT_DIR, config_override)
+        script_override_path = os.path.join(SCRIPT_DIR, config_override)
+
+        if os.path.exists(root_override_path):
+            config_yaml = root_override_path
+        else:
+            config_yaml = script_override_path
+    else:
+        config_yaml = os.path.join(SCRIPT_DIR, "copy-config.yaml")
+
     with open(config_yaml, 'r') as f:
         config = yaml.safe_load(f)
 
