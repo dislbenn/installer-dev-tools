@@ -1259,7 +1259,10 @@ def main():
         exit(0)
 
     # Normalize: if "components" key exists, use it; else assume config itself is the list
-    components = config.get("components", config if isinstance(config, list) else [])
+    if isinstance(config, dict):
+        components = config.get("components", [])
+    else:
+        components = config  # If it's already a list, use it directly
 
     if component:
         config["components"] = [repo for repo in config["components"] if repo["repo_name"] == component]
