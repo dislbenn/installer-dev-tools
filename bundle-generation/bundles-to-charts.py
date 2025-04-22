@@ -1494,8 +1494,8 @@ def main():
     # Normalize config into a list of components
     if isinstance(config, dict):
         # Set global environment variables
-        os.environ['ACM_RELEASE_VERSION'] = config.get('acm_release_version', '')
-        os.environ['MCE_RELEASE_VERSION'] = config.get('mce_release_version', '')
+        os.environ['ACM_RELEASE_VERSION'] = config.get('acm-release-version', '')
+        os.environ['MCE_RELEASE_VERSION'] = config.get('mce-release-version', '')
         components = config.get("components", [])
 
     else:
