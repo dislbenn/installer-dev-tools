@@ -485,6 +485,8 @@ def is_version_compatible(branch, min_release_version, min_backplane_version, mi
     # Retrieve the release versions from environment variables
     acm_release_version = os.getenv('ACM_RELEASE_VERSION')
     mce_release_version = os.getenv('MCE_RELEASE_VERSION')
+    
+    logging.info(f"acm {acm_release_version} - mce {mce_release_version}")
 
     if not acm_release_version and not mce_release_version:
         logging.error("Neither ACM nor MCE release version is set in environment variables.")
