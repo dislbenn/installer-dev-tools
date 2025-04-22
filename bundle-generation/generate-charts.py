@@ -469,37 +469,70 @@ def insertFlowControlIfAround(lines_list, first_line_index, last_line_index, if_
    lines_list[last_line_index] = "%s{{- end }}\n" % lines_list[last_line_index]
 
 def is_version_compatible(branch, min_release_version, min_backplane_version, min_ocm_version, enforce_master_check=True):
-    # Extract the version part from the branch name (e.g., '2.12-integration' -> '2.12')
-    pattern = r'(\d+\.\d+)'  # Matches versions like '2.12'
-    
-    if branch == "main" or branch == "master":
-        if enforce_master_check:
-            return True
+    """_summary_
+
+    Args:
+        branch (_type_): _description_
+        min_release_version (_type_): _description_
+        min_backplane_version (_type_): _description_
+        min_ocm_version (_type_): _description_
+        enforce_master_check (bool, optional): _description_. Defaults to True.
+
+    Returns:
+        _type_: _description_
+    """
+
+    # Retrieve the release versions from environment variables
+    acm_release_version = os.getenv('ACM_RELEASE_VERSION')
+    mce_release_version = os.getenv('MCE_RELEASE_VERSION')
+
+    if not acm_release_version and not mce_release_version:
+        logging.error("Neither ACM nor MCE release version is set in environment variables.")
+
+        # Extract the version part from the branch name (e.g., '2.12-integration' -> '2.12')
+        pattern = r'(\d+\.\d+)'  # Matches versions like '2.12'
+
+        if branch == "main" or branch == "master":
+            if enforce_master_check:
+                return True
+            else:
+                return False
+
+        match = re.search(pattern, branch)
+        if match:
+            v = match.group(1)  # Extract the version
+            branch_version = version.Version(v)  # Create a Version object
+
+            if "release-ocm" in branch:
+                min_branch_version = version.Version(min_ocm_version)  # Use the minimum release version
+
+            elif "release" in branch:
+                min_branch_version = version.Version(min_release_version)  # Use the minimum release version
+
+            elif "backplane" in branch or "mce" in branch:
+                min_branch_version = version.Version(min_backplane_version)  # Use the minimum backplane version
+
+            else:
+                logging.error("Unrecognized branch type for branch: %s", branch)
+                return False
+
+            # Check if the branch version is compatible with the specified minimum branch
+            return branch_version >= min_branch_version
+
         else:
+            logging.error("Version not found in branch: %s", branch)
             return False
-    
-    match = re.search(pattern, branch)
-    if match:
-        v = match.group(1)  # Extract the version
-        branch_version = version.Version(v)  # Create a Version object
         
-        if "release-ocm" in branch:
-            min_branch_version = version.Version(min_ocm_version)  # Use the minimum release version
-        
-        elif "release" in branch:
-            min_branch_version = version.Version(min_release_version)  # Use the minimum release version
+    if acm_release_version and acm_release_version >= min_release_version:
+        logging.info(f"ACM release version {acm_release_version} meets the minimum required version {min_release_version}.")
+        return True
 
-        elif "backplane" in branch or "mce" in branch:
-            min_branch_version = version.Version(min_backplane_version)  # Use the minimum backplane version
-
-        else:
-            logging.error(f"Unrecognized branch type for branch: {branch}")
-            return False
-
-        # Check if the branch version is compatible with the specified minimum branch
-        return branch_version >= min_branch_version
+    elif mce_release_version and mce_release_version >= min_backplane_version:
+        logging.info(f"MCE release version {mce_release_version} meets the minimum required version {min_backplane_version}.")
+        return True
 
     else:
+        logging.warning("Neither ACM nor MCE release version meets the required minimum version.")
         return False
 
 # injectHelmFlowControl injects advanced helm flow control which would typically make a .yaml file more difficult to parse. This should be called last.
@@ -1277,7 +1310,10 @@ def main():
 
     # Normalize config into a list of components
     if isinstance(config, dict):
+        os.environ['ACM_RELEASE_VERSION'] = config.get('acm_release_version', '')
+        os.environ['MCE_RELEASE_VERSION'] = config.get('mce_release_version', '')
         components = config.get("components", [])
+
     else:
         components = config
 
