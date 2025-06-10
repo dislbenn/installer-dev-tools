@@ -674,6 +674,37 @@ def ensure_clusterrole_binding_subject_namespace(resource_data, resource_name, d
         subject['namespace'] = subject_namespace
     logging.info(f"Subject namespace for '{resource_name}' set to: '{subject_namespace}'\n")
 
+def ensure_console_plugin_namespace(resource_data, resource_name, default_namespace):
+    console_plugin_spec = resource_data.get('spec', {})
+
+    # Ensure backend.service.namespace is set
+    backend = console_plugin_spec.get('backend', {})
+    backend_service = backend.get('service', {})
+
+    if 'namespace' not in backend_service:
+        backend_service['namespace'] = default_namespace
+        logging.info(f"Backend service \"{backend_service.get('name')}\" namespace set to: \"{backend_service.get('namespace')}\"")
+
+    backend['service'] = backend_service
+    console_plugin_spec['backend'] = backend
+
+    # Ensure each proxy[n].endpoint.service.namespace is set
+    proxies = console_plugin_spec.get('proxy', [])
+    for proxy in proxies:
+        endpoint = proxy.get('endpoint', {})
+        service = endpoint.get('service', {})
+
+        if 'namespace' not in service:
+            service['namespace'] = default_namespace
+            logging.info(f"Proxy service \"{service.get('name')}\" namespace set to: \"{service.get('namespace')}\"")
+
+        endpoint['service'] = service
+        proxy['endpoint'] = endpoint
+    console_plugin_spec['proxy'] = proxies
+
+    resource_data['spec'] = console_plugin_spec
+    logging.info(f"ConsolePlugin '${resource_name} namespace updated\n")
+
 def ensure_stateful_set_storage_class(resource_data, resource_name):
     """
     Ensures that a StatefulSet has a storageClassName set.
@@ -844,6 +875,9 @@ def update_helm_resources(chartName, helmChart, skip_rbac_overrides, exclusions,
                     resource_data['metadata']['namespace'] = resource_namespace
                     logging.info(f"Namespace for '{resource_name}' set to: {resource_namespace}")
 
+                if kind == "ConsolePlugin":
+                    ensure_console_plugin_namespace(resource_data, resource_name, default_namespace)
+                
                 # Ensure Mutating/Validating WebhookConfigurations has a service namespace set,
                 # defaulting to Helm values if not specified.
                 if kind == "MutatingWebhookConfiguration" or kind == "ValidatingWebhookConfiguration":
