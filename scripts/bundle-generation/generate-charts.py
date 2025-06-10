@@ -681,10 +681,17 @@ def ensure_console_plugin_namespace(resource_data, resource_name, default_namesp
     backend = console_plugin_spec.get('backend', {})
     backend_service = backend.get('service', {})
 
-    if 'namespace' not in backend_service:
-        backend_service['namespace'] = default_namespace
-        logging.info(f"Backend service \"{backend_service.get('name')}\" namespace set to: \"{backend_service.get('namespace')}\"")
+    backend_service_name = backend_service.get('name')
+    backend_service_namespace = backend_service.get('namespace')
 
+    if backend_service_namespace is None:
+        backend_service_namespace = default_namespace
+    else:
+        backend_service_namespace = f"{{{{ default \"{backend_service_namespace}\" .Values.global.namespace }}}}"
+
+    backend_service['namespace'] = backend_service_namespace
+    logging.info(f"Backend service \"{backend_service_name}\" namespace set to: \"{backend_service_namespace}\"")
+    
     backend['service'] = backend_service
     console_plugin_spec['backend'] = backend
 
@@ -692,13 +699,19 @@ def ensure_console_plugin_namespace(resource_data, resource_name, default_namesp
     proxies = console_plugin_spec.get('proxy', [])
     for proxy in proxies:
         endpoint = proxy.get('endpoint', {})
-        service = endpoint.get('service', {})
+        proxy_service = endpoint.get('service', {})
 
-        if 'namespace' not in service:
-            service['namespace'] = default_namespace
-            logging.info(f"Proxy service \"{service.get('name')}\" namespace set to: \"{service.get('namespace')}\"")
+        proxy_service_name = proxy_service.get('name')
+        proxy_service_namespace = proxy_service.get('namespace')
 
-        endpoint['service'] = service
+        if proxy_service_namespace is None:
+            proxy_service_namespace = default_namespace
+        else:
+            proxy_service_namespace = f"{{{{ default \"{proxy_service_namespace}\" .Values.global.namespace }}}}"
+        
+        logging.info(f"Proxy service \"{proxy_service_name}\" namespace set to: \"{proxy_service_namespace}\"")
+
+        endpoint['service'] = proxy_service
         proxy['endpoint'] = endpoint
     console_plugin_spec['proxy'] = proxies
 
