@@ -708,15 +708,15 @@ def ensure_console_plugin_namespace(resource_data, resource_name, default_namesp
             proxy_service_namespace = default_namespace
         else:
             proxy_service_namespace = f"{{{{ default \"{proxy_service_namespace}\" .Values.global.namespace }}}}"
-        
+
+        proxy_service['namespace'] = proxy_service_namespace
         logging.info(f"Proxy service \"{proxy_service_name}\" namespace set to: \"{proxy_service_namespace}\"")
 
         endpoint['service'] = proxy_service
         proxy['endpoint'] = endpoint
-        console_plugin_spec['proxy'] = proxy
 
+    console_plugin_spec['proxy'] = proxies
     resource_data['spec'] = console_plugin_spec
-    logging.info(f"ConsolePlugin '${resource_name} namespace updated\n")
 
 def ensure_stateful_set_storage_class(resource_data, resource_name):
     """
