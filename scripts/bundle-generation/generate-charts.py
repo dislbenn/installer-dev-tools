@@ -304,7 +304,7 @@ def copyHelmChart(destinationChartPath, repo, chart, chartVersion, branch):
         logging.warning(f"No specific values.yaml found for chart '{chartName}'")
 
     logging.info(f"Running 'helm template' for chart: '{chartName}'")
-    helmTemplateOutput = subprocess.getoutput(['helm template '+ chartPath])
+    helmTemplateOutput = subprocess.getoutput(['helm template '+ chartPath + ' --namespace=PLACEHOLDER_NAMESPACE'])
 
     yamlList = helmTemplateOutput.split('---')
     for outputContent in yamlList:
@@ -860,11 +860,11 @@ def update_helm_resources(chartName, helmChart, skip_rbac_overrides, exclusions,
                     ensure_pvc_storage_class(resource_data, resource_name)
 
                 if chartName == 'flight-control':
-                    if kind == 'Route':
-                        if resource_name == 'flightctl-api-route':
-                            resource_data['spec']['host'] = """api.{{ .Values.global.baseDomain  }}"""
-                        if resource_name == 'flightctl-api-route-agent':
-                            resource_data['spec']['host'] = """agent-api.{{ .Values.global.baseDomain  }}"""
+                    # if kind == 'Route':
+                        # if resource_name == 'flightctl-api-route':
+                            # resource_data['spec']['host'] = """api.{{ .Values.global.baseDomain  }}"""
+                        # if resource_name == 'flightctl-api-route-agent':
+                            # resource_data['spec']['host'] = """agent-api.{{ .Values.global.baseDomain  }}"""
 
                     if kind == 'ConfigMap':
                         resource_data['metadata']['namespace'] = '{{ .Values.global.namespace  }}'
