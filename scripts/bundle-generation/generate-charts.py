@@ -713,7 +713,7 @@ def ensure_console_plugin_namespace(resource_data, resource_name, default_namesp
 
         endpoint['service'] = proxy_service
         proxy['endpoint'] = endpoint
-    console_plugin_spec['proxy'] = proxies
+        console_plugin_spec['proxy'] = proxy
 
     resource_data['spec'] = console_plugin_spec
     logging.info(f"ConsolePlugin '${resource_name} namespace updated\n")
