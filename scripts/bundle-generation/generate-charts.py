@@ -860,12 +860,6 @@ def update_helm_resources(chartName, helmChart, skip_rbac_overrides, exclusions,
                     ensure_pvc_storage_class(resource_data, resource_name)
 
                 if chartName == 'flight-control':
-                    # if kind == 'Route':
-                        # if resource_name == 'flightctl-api-route':
-                            # resource_data['spec']['host'] = """api.{{ .Values.global.baseDomain  }}"""
-                        # if resource_name == 'flightctl-api-route-agent':
-                            # resource_data['spec']['host'] = """agent-api.{{ .Values.global.baseDomain  }}"""
-
                     if kind == 'ConfigMap':
                         resource_data['metadata']['namespace'] = '{{ .Values.global.namespace  }}'
                         config_data = resource_data.get('data')
@@ -875,7 +869,7 @@ def update_helm_resources(chartName, helmChart, skip_rbac_overrides, exclusions,
                                 logging.warning(f"key_data={key_data.get('database').get('hostname')}")
                                 hostname = key_data.get('database').get('hostname')
                                 key_data = replace_default(key_data, 'PLACEHOLDER_NAMESPACE', '{{ .Values.global.namespace }}')
-                                key_data = replace_default(key_data, 'placeholder_apiurl', '{{ .Values.global.apiUrl }}')
+                                # key_data = replace_default(key_data, 'placeholder_apiurl', '{{ .Values.global.apiUrl }}')
                                 key_data = replace_default(key_data, 'placeholder_basedomain', '{{ .Values.global.baseDomain }}')
                                 updated_yaml = yaml.dump(key_data, default_flow_style=False, allow_unicode=True, width=float("inf"))
                                 config_data[key] = updated_yaml
@@ -885,6 +879,7 @@ def update_helm_resources(chartName, helmChart, skip_rbac_overrides, exclusions,
                     if kind == "ClusterRoleBinding":
                         resource_data['metadata']['name'] = 'flightctl-api-{{ .Values.global.namespace }}'
                         resource_data['roleRef']['name'] = 'flightctl-api-{{ .Values.global.namespace }}'
+
                     if kind == "ClusterRole":
                         resource_data['metadata']['name'] = 'flightctl-api-{{ .Values.global.namespace }}'
 
