@@ -876,7 +876,6 @@ def update_helm_resources(chartName, helmChart, skip_rbac_overrides, exclusions,
                                 hostname = key_data.get('database').get('hostname')
                                 key_data = replace_default(key_data, 'PLACEHOLDER_NAMESPACE', '{{ .Values.global.namespace }}')
                                 key_data = replace_default(key_data, 'placeholder_apiurl', '{{ .Values.global.apiUrl }}')
-                                key_data = replace_default(key_data, 'placeholder_basedomain', '{{ .Values.global.baseDomain }}')
                                 updated_yaml = yaml.dump(key_data, default_flow_style=False, allow_unicode=True, width=float("inf"))
                                 config_data[key] = updated_yaml
                                 resource_data['data'] = config_data
