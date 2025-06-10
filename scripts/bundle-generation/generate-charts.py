@@ -304,7 +304,7 @@ def copyHelmChart(destinationChartPath, repo, chart, chartVersion, branch):
         logging.warning(f"No specific values.yaml found for chart '{chartName}'")
 
     logging.info(f"Running 'helm template' for chart: '{chartName}'")
-    helmTemplateOutput = subprocess.getoutput(['helm template '+ chartPath + ' --namespace=PLACEHOLDER_NAMESPACE'])
+    helmTemplateOutput = subprocess.getoutput(['helm template '+ chartPath])
 
     yamlList = helmTemplateOutput.split('---')
     for outputContent in yamlList:
@@ -825,6 +825,10 @@ def update_helm_resources(chartName, helmChart, skip_rbac_overrides, exclusions,
                     resource_data = yaml.safe_load(f)
                     resource_name = resource_data['metadata'].get('name')
                     logging.info(f"Processing resource: {resource_name} from template: {template_path}")
+
+                if chartName == 'flight-control':
+                    if kind == 'ConsolePlugin':
+                        resource_data = replace_default(resource_data, 'PLACEHOLDER_NAMESPACE', '{{ .Values.global.namespace }}')
 
                 # Ensure namespace is set for namespace-scoped resources
                 if kind in namespace_scoped_kinds:
