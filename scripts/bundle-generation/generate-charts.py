@@ -802,7 +802,7 @@ def update_helm_resources(chartName, helmChart, skip_rbac_overrides, exclusions,
 
     namespace_scoped_kinds = [
         "ConfigMap", "Deployment", "NetworkPolicy", "PersistentVolumeClaim", "RoleBinding", "Role", "Route",
-        "Secret", "Service", "StatefulSet", "Job"
+        "Secret", "Service", "StatefulSet", "Job", "Placement"
     ]
 
     for kind in resource_kinds:
