@@ -1248,7 +1248,7 @@ def renderChart(chart_path):
         # Use the Helm command to render the chart
         logging.info("Rendering chart '%s'...", chart_path)
         subprocess.run(
-            ['helm', 'template', chart_path, '-f', values_file_path],
+            ['helm', 'template', chart_path, '-f', values_file_path, '--debug'],
             check=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE
