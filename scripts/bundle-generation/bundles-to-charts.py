@@ -377,27 +377,79 @@ def check_unsupported_csv_resources(csv_path, csv_data, supported_config_types):
     return False
 
 def escape_template_variables(helmChart, variables):
-    """_summary_
+    """Auto-detects and escapes template variables in AddOnTemplate files.
+
+    This function scans AddOnTemplate files for {{VARIABLE}} patterns and automatically
+    escapes them to {{ `{{VARIABLE}}` }} so they are treated as literals by Helm.
+    It filters out Helm template syntax (like .Values, .Release) and already-escaped variables.
 
     Args:
-        helmChart (_type_): _description_
-        variables (_type_): _description_
+        helmChart (str): Path to the Helm chart directory
+        variables (list): List of known variables from config.yaml (used for logging/reference)
     """
     addonTemplates = find_templates_of_type(helmChart, 'AddOnTemplate')
-    for addonTemplate in addonTemplates:
-        for variable in variables:
-            logging.info("Start to escape vriable %s", variable)
-            at = open(addonTemplate, "r")
-            lines = at.readlines()
-            v = "{{"+variable+"}}"
-            for i, line in enumerate(lines):
-                if v in line.strip():
-                    logging.info("Found variable %s in line: %s", v, line.strip())
-                    lines[i] = line.replace(v, "{{ `"+ v + "` }}")
 
-            a_file = open(addonTemplate, "w")
-            a_file.writelines(lines)
-            a_file.close()
+    # Pattern to find {{...}} that are not already escaped
+    # Matches {{ANYTHING}} but not {{ `{{...}}` }}
+    template_var_pattern = re.compile(r'\{\{(?!`)(.*?)(?<!`)\}\}')
+
+    # Patterns to exclude (Helm template functions)
+    helm_functions = ['.Values', '.Release', '.Chart', '.Files', '.Capabilities', '.Template', 'include', 'toYaml', 'toJson', 'range', 'if', 'else', 'end', 'with', 'define', 'tpl', 'required']
+
+    all_detected_vars = set()
+    config_vars = set(variables) if variables else set()
+
+    for addonTemplate in addonTemplates:
+        logging.info("Scanning AddOnTemplate: %s", addonTemplate)
+
+        with open(addonTemplate, "r") as at:
+            lines = at.readlines()
+
+        modified = False
+        for i, line in enumerate(lines):
+            # Find all {{...}} patterns in the line
+            matches = template_var_pattern.findall(line)
+
+            for match in matches:
+                match_stripped = match.strip()
+
+                # Skip if it's a Helm template function
+                is_helm_function = any(func in match_stripped for func in helm_functions)
+                if is_helm_function:
+                    continue
+
+                # Skip if it contains backticks (already escaped)
+                if '`' in match:
+                    continue
+
+                # This is a variable that needs escaping
+                var_name = match_stripped
+                original_pattern = "{{" + match + "}}"
+                escaped_pattern = "{{ `" + original_pattern + "` }}"
+
+                # Only replace if not already escaped
+                if escaped_pattern not in line:
+                    logging.info("Auto-escaping variable '%s' in line: %s", var_name, line.strip())
+                    lines[i] = line.replace(original_pattern, escaped_pattern)
+                    modified = True
+                    all_detected_vars.add(var_name)
+
+        # Write back if modified
+        if modified:
+            with open(addonTemplate, "w") as a_file:
+                a_file.writelines(lines)
+
+    # Log summary
+    if all_detected_vars:
+        logging.info("Auto-escaped %d template variables: %s", len(all_detected_vars), sorted(all_detected_vars))
+
+        # Check if any were not in the config.yaml list
+        new_vars = all_detected_vars - config_vars
+        if new_vars:
+            logging.warning("Found %d variables not in config.yaml escape-template-variables list: %s",
+                          len(new_vars), sorted(new_vars))
+            logging.info("These variables were automatically escaped. Consider adding them to config.yaml for documentation.")
+
     logging.info("Escaped template variables.\n")
 
 # Adds resources identified in the CSV to the helmchart
