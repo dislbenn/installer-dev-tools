@@ -19,8 +19,6 @@ from validate_csv import *
 # Configure logging with coloredlogs
 coloredlogs.install(level='DEBUG')  # Set the logging level as needed
 
-# Removed literal_str class - using post-processing instead
-
 # Config Constants
 SCRIPT_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)))
 ROOT_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, "..", ".."))
@@ -656,91 +654,6 @@ def addPullSecretOverride(deployment):
         a_file.writelines(lines)
         a_file.close()
 
-# inject_probe_config_helm_templates injects conditional probeConfig templates (ACM 2.17+)
-def inject_probe_config_helm_templates(deployment_file):
-    """
-    Injects conditional Helm templates for probe configuration into deployment files.
-
-    Adds template blocks for exec probes that allow users to optionally configure:
-    - timeoutSeconds (K8s default: 1) - all probe types
-    - failureThreshold (K8s default: 3) - all probe types
-    - successThreshold (K8s default: 1) - readinessProbe only
-
-    Note: successThreshold is only injected for readinessProbe because Kubernetes
-    validation requires livenessProbe.successThreshold to be exactly 1, making it
-    non-configurable for liveness and startup probes.
-
-    This addresses ACM-29011 where customers on compact clusters or slow I/O systems
-    experience frequent probe timeouts. Rather than forcing new defaults on all users,
-    this allows opt-in configuration via MCH CR probeConfig field while preserving
-    Kubernetes defaults when not configured.
-
-    Only applies to exec probes (not httpGet/tcpSocket). Only injects if values don't
-    already exist in the template.
-
-    Note: This function is only called for ACM 2.17+ and MCE 2.17+ releases.
-
-    Args:
-        deployment_file (str): Path to the deployment YAML file to update
-    """
-    import re
-
-    with open(deployment_file, 'r', encoding='utf-8') as f:
-        lines = f.readlines()
-
-    i = 0
-    while i < len(lines):
-        line = lines[i]
-
-        # Find probe sections
-        probe_match = re.match(r'^(\s+)(livenessProbe|readinessProbe|startupProbe):\s*$', line)
-        if probe_match:
-            base_indent = len(probe_match.group(1))
-            probe_type = probe_match.group(2)
-            field_indent = ' ' * (base_indent + 2)
-
-            # Collect the probe section
-            probe_section = []
-            j = i + 1
-            while j < len(lines) and lines[j].strip():
-                line_indent = len(lines[j]) - len(lines[j].lstrip())
-                if line_indent <= base_indent:
-                    break
-                probe_section.append(lines[j])
-                j += 1
-
-            probe_text = ''.join(probe_section)
-
-            # Only process exec probes
-            if 'exec:' in probe_text:
-                # Append missing fields
-                if 'timeoutSeconds:' not in probe_text:
-                    lines.insert(j, '{{- if and .Values.hubconfig.probeConfig (hasKey .Values.hubconfig.probeConfig "timeoutSeconds") }}\n')
-                    lines.insert(j+1, f'{field_indent}timeoutSeconds: {{{{ .Values.hubconfig.probeConfig.timeoutSeconds }}}}\n')
-                    lines.insert(j+2, '{{- end }}\n')
-                    j += 3
-
-                if 'failureThreshold:' not in probe_text:
-                    lines.insert(j, '{{- if and .Values.hubconfig.probeConfig (hasKey .Values.hubconfig.probeConfig "failureThreshold") }}\n')
-                    lines.insert(j+1, f'{field_indent}failureThreshold: {{{{ .Values.hubconfig.probeConfig.failureThreshold }}}}\n')
-                    lines.insert(j+2, '{{- end }}\n')
-                    j += 3
-
-                # Only inject successThreshold for readinessProbe
-                # livenessProbe.successThreshold must be 1 (K8s validation requirement)
-                if probe_type == 'readinessProbe' and 'successThreshold:' not in probe_text:
-                    lines.insert(j, '{{- if and .Values.hubconfig.probeConfig (hasKey .Values.hubconfig.probeConfig "successThreshold") }}\n')
-                    lines.insert(j+1, f'{field_indent}successThreshold: {{{{ .Values.hubconfig.probeConfig.successThreshold }}}}\n')
-                    lines.insert(j+2, '{{- end }}\n')
-                    j += 3
-
-            i = j
-        else:
-            i += 1
-
-    with open(deployment_file, 'w', encoding='utf-8') as f:
-        f.writelines(lines)
-
 # updateDeployments adds standard configuration to the deployments (antiaffinity, security policies, and tolerations)
 def updateDeployments(chartName, helmChart, exclusions, inclusions, branch):
     logging.info("Updating deployments with antiaffinity, security policies, and tolerations ...")
@@ -765,19 +678,12 @@ def updateDeployments(chartName, helmChart, exclusions, inclusions, branch):
         deploy['spec']['template']['metadata']['labels']['ocm-antiaffinity-selector'] = deploy['metadata']['name']
         deploy['spec']['template']['spec']['nodeSelector'] = ""
         deploy['spec']['template']['spec']['imagePullSecrets'] = ''
-
+        
         with open(deployment, 'w') as f:
             yaml.dump(deploy, f, width=float("inf"))
-
         logging.info("Deployments updated with antiaffinity, security policies, and tolerations successfully. \n")
 
         injectHelmFlowControl(deployment, branch)
-
-        # Inject conditional probe config templates (ACM 2.17+)
-        # This must be done AFTER injectHelmFlowControl since that function manipulates the YAML
-        if is_version_compatible(branch, '2.17', '2.17', '2.17'):
-            inject_probe_config_helm_templates(deployment)
-
         if 'pullSecretOverride' in inclusions:
             addPullSecretOverride(deployment)
 
@@ -901,64 +807,7 @@ def ensure_clustermanagementaddon_namespace(resource_data, resource_name, defaul
             placement_namespace = f"{{{{ default \"{placement_namespace}\" .Values.global.namespace }}}}"
             placement['namespace'] = placement_namespace
             logging.info(f"Namespace for Placement {placement['name']} for {resource_name} set to {placement_namespace}")
-
-
-def ensure_managedproxyconfiguration_spec(resource_data, resource_name, default_namespace):
-    """
-    Ensures that ManagedProxyConfiguration spec fields use Helm templating for
-    images, namespaces, and replicas. Only transforms values that need templating.
-
-    Args:
-        resource_data (dict): The ManagedProxyConfiguration resource data.
-        resource_name (str): The name of the resource.
-        default_namespace (str): The default namespace template.
-
-    Returns:
-        None: Modifies resource_data in place.
-    """
-    if 'spec' not in resource_data:
-        return
-
-    spec = resource_data['spec']
-
-    # Update proxyServer configuration
-    if 'proxyServer' in spec:
-        proxy_server = spec['proxyServer']
-
-        # Transform image reference to use imageOverrides
-        if 'image' in proxy_server:
-            # Extract image name from existing value for mapping
-            image_ref = parse_image_ref(proxy_server['image'])
-            image_key = image_ref.get('repository', 'cluster_proxy')
-            # Use the repository name as the image key (e.g., cluster-proxy -> cluster_proxy)
-            image_key = image_key.replace('-', '_')
-            proxy_server['image'] = f"{{{{ .Values.global.imageOverrides.{image_key} }}}}"
-            logging.info(f"Image for {resource_name} proxyServer set to imageOverrides.{image_key}")
-
-        # Transform namespace to use template variable
-        if 'namespace' in proxy_server:
-            proxy_server['namespace'] = default_namespace
-            logging.info(f"Namespace for {resource_name} proxyServer set to {default_namespace}")
-
-        # Transform replicas to use template variable
-        if 'replicas' in proxy_server:
-            proxy_server['replicas'] = "{{ .Values.hubconfig.replicaCount }}"
-            logging.info(f"Replicas for {resource_name} proxyServer set to Helm template")
-
-    # Update proxyAgent configuration
-    if 'proxyAgent' in spec:
-        proxy_agent = spec['proxyAgent']
-
-        # Transform image reference to use imageOverrides
-        if 'image' in proxy_agent:
-            # Extract image name from existing value for mapping
-            image_ref = parse_image_ref(proxy_agent['image'])
-            image_key = image_ref.get('repository', 'cluster_proxy')
-            # Use the repository name as the image key (e.g., cluster-proxy -> cluster_proxy)
-            image_key = image_key.replace('-', '_')
-            proxy_agent['image'] = f"{{{{ .Values.global.imageOverrides.{image_key} }}}}"
-            logging.info(f"Image for {resource_name} proxyAgent set to imageOverrides.{image_key}")
-
+    
 
 def ensure_webhook_namespace(resource_data, resource_name, default_namespace):
     """
@@ -1084,12 +933,12 @@ def update_helm_resources(chartName, helmChart, skip_rbac_overrides, exclusions,
 
     resource_kinds = [
         "AddOnTemplate", "Certificate", "ClusterManagementAddOn", "ClusterRole", "ClusterRoleBinding", "ConfigMap", "ConsolePlugin", "Deployment", "Issuer", "Job",
-        "ManagedClusterSetBinding", "ManagedProxyConfiguration", "MutatingWebhookConfiguration", "NetworkPolicy", "PersistentVolumeClaim", "Placement", "PodDisruptionBudget", "Role", "RoleBinding",
+        "ManagedClusterSetBinding", "MutatingWebhookConfiguration", "NetworkPolicy", "PersistentVolumeClaim", "Placement", "PodDisruptionBudget", "Role", "RoleBinding",
         "Route", "Secret", "Service", "StatefulSet", "ValidatingWebhookConfiguration",
     ]
 
     namespace_scoped_kinds = [
-        "Certificate", "ConfigMap", "Deployment", "Issuer", "Job", "ManagedClusterSetBinding", "ManagedProxyConfiguration", "NetworkPolicy", "PersistentVolumeClaim", "Placement",
+        "Certificate", "ConfigMap", "Deployment", "Issuer", "Job", "ManagedClusterSetBinding", "NetworkPolicy", "PersistentVolumeClaim", "Placement",
         "PodDisruptionBudget", "Role", "RoleBinding", "Route", "Secret", "Service", "StatefulSet"
     ]
 
@@ -1172,12 +1021,7 @@ def update_helm_resources(chartName, helmChart, skip_rbac_overrides, exclusions,
                 # defaulting to Helm values if not specified.
                 if kind == 'ClusterManagementAddOn':
                     ensure_clustermanagementaddon_namespace(resource_data, resource_name, default_namespace)
-
-                # Ensure ManagedProxyConfiguration spec uses Helm templating,
-                # for images, namespaces, replicas, entrypoint, and node placement.
-                if kind == 'ManagedProxyConfiguration':
-                    ensure_managedproxyconfiguration_spec(resource_data, resource_name, default_namespace)
-
+                
                 # Ensure the StatefulSet has a storageClassName set,
                 # defaulting to Helm values if not specified.
                 if kind == 'StatefulSet':
@@ -1187,6 +1031,43 @@ def update_helm_resources(chartName, helmChart, skip_rbac_overrides, exclusions,
                 # defaulting to Helm values if not specified.
                 if kind == 'PersistentVolumeClaim':
                     ensure_pvc_storage_class(resource_data, resource_name)
+                
+
+                if chartName == 'flight-control':
+                    if kind == 'Route':
+                        if resource_name == 'flightctl-api-route':
+                            resource_data['spec']['host'] = """api.{{ .Values.global.baseDomain  }}"""
+                        if resource_name == 'flightctl-api-route-agent':
+                            resource_data['spec']['host'] = """agent-api.{{ .Values.global.baseDomain  }}"""
+
+                    if kind == 'ConfigMap':
+                        resource_data['metadata']['namespace'] = '{{ .Values.global.namespace  }}'
+                        config_data = resource_data.get('data')
+                        for key, value in config_data.items():
+                            if key.endswith(".yaml") or key.endswith(".yml"):
+                                value = re.sub(r": ([^'\"\n]*\{\{[^}]+\}\}[^'\"\n]*)$", r": '\1'", value, flags=re.MULTILINE)
+                                key_data = yaml.safe_load(value)
+                                # logging.warning(f"key_data={key_data.get('database').get('hostname')}")
+                                # hostname = key_data.get('database').get('hostname')
+                                key_data = replace_default(key_data, 'PLACEHOLDER_NAMESPACE', '{{ .Values.global.namespace }}')
+                                key_data = replace_default(key_data, 'placeholder_apiurl', '{{ .Values.global.apiUrl }}')
+                                key_data = replace_default(key_data, 'placeholder_basedomain', '{{ .Values.global.baseDomain }}')
+                                updated_yaml = yaml.dump(key_data, default_flow_style=False, allow_unicode=True, width=float("inf"))
+                                updated_yaml = re.sub(r": (?!['\"])(.*\{\{[^}]+\}\}.*?)$", r": '\1'", updated_yaml, flags=re.MULTILINE)
+                                config_data[key] = updated_yaml
+                                resource_data['data'] = config_data
+                        resource_data['data'] = replace_default(resource_data['data'], 'PLACEHOLDER_NAMESPACE', '{{ .Values.global.namespace }}')
+                
+                    if kind == "ClusterRoleBinding":
+                        resource_data = replace_default(resource_data, 'PLACEHOLDER_NAMESPACE', '{{ .Values.global.namespace }}')
+                    if kind == "ClusterRole":
+                        resource_data = replace_default(resource_data, 'PLACEHOLDER_NAMESPACE', '{{ .Values.global.namespace }}')
+
+                    if kind == "NetworkPolicy":
+                        resource_data['metadata']['namespace'] = '{{ .Values.global.namespace }}'
+                        resource_data = replace_default(resource_data, 'PLACEHOLDER_NAMESPACE', '{{ .Values.global.namespace }}')
+                    if kind == "Job":
+                        resource_data = replace_default(resource_data, 'PLACEHOLDER_NAMESPACE', '{{ .Values.global.namespace }}')
 
                 if chartName != "managed-serviceaccount":
                     if kind == "ClusterRoleBinding" or kind == "RoleBinding":
@@ -1568,8 +1449,6 @@ def main():
     parser.add_argument("--destination", dest="destination", type=str, required=False, help="Destination directory of the created helm chart")
     parser.add_argument("--skipOverrides", dest="skipOverrides", type=bool, help="If true, overrides such as helm flow control will not be applied")
     parser.add_argument("--lint", dest="lint", action='store_true', help="If true, bundles will only be linted to ensure they can be transformed successfully. Default is False.")
-    parser.add_argument("--component-branch", dest="component_branch", action='append', type=str, required=False, help="Override branch for a specific component. Format: component_name:branch_name. Can be specified multiple times.")
-    parser.add_argument("--component-fork", dest="component_fork", action='append', type=str, required=False, help="Override git repository URL for a specific component. Format: component_name:git_url. Can be specified multiple times.")
 
     parser.set_defaults(skipOverrides=False)
     parser.set_defaults(lint=False)
@@ -1580,28 +1459,6 @@ def main():
     destination = args.destination
     lint = args.lint
     skipOverrides = args.skipOverrides
-
-    # Parse component branch overrides into a dictionary
-    component_branch_overrides = {}
-    if args.component_branch:
-        for override in args.component_branch:
-            if ':' not in override:
-                logging.warning(f"Invalid component-branch format: '{override}'. Expected 'component_name:branch_name'. Skipping.")
-                continue
-            comp_name, branch_name = override.split(':', 1)
-            component_branch_overrides[comp_name] = branch_name
-            logging.info(f"Branch override configured: {comp_name} -> {branch_name}")
-
-    # Parse component fork overrides into a dictionary
-    component_fork_overrides = {}
-    if args.component_fork:
-        for override in args.component_fork:
-            if ':' not in override:
-                logging.warning(f"Invalid component-fork format: '{override}'. Expected 'component_name:git_url'. Skipping.")
-                continue
-            comp_name, git_url = override.split(':', 1)
-            component_fork_overrides[comp_name] = git_url
-            logging.info(f"Fork override configured: {comp_name} -> {git_url}")
 
     if lint == False and not destination:
         logging.critical("Destination directory is required when not linting.")
@@ -1651,21 +1508,9 @@ def main():
 
         if os.path.exists(repo_path): # If path exists, remove and re-clone
             shutil.rmtree(repo_path)
+        repository = Repo.clone_from(repo["github_ref"], repo_path) # Clone repo to above path
 
-        # Check for fork override first, then use config github_ref
-        if repo_name in component_fork_overrides:
-            git_url = component_fork_overrides[repo_name]
-            logging.info(f"Using fork override for {repo_name}: {git_url}")
-            repository = Repo.clone_from(git_url, repo_path)
-        else:
-            repository = Repo.clone_from(repo["github_ref"], repo_path) # Clone repo to above path
-
-        # Check for branch override first, then use config branch, or default to empty string
-        if repo_name in component_branch_overrides:
-            branch = component_branch_overrides[repo_name]
-            logging.info(f"Using branch override for {repo_name}: {branch}")
-            repository.git.checkout(branch)
-        elif 'branch' in repo:
+        if 'branch' in repo:
             branch = repo['branch']
             repository.git.checkout(branch) # If a branch is specified, checkout that branch
         else:
