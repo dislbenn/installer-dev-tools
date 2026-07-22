@@ -764,6 +764,32 @@ def update_helm_resources(chartName, helmChart, skip_rbac_overrides, exclusions,
 
     logging.info("Resource updating process completed.")
 
+
+def wrapNetworkPoliciesWithCondition(helmChart, branch):
+    """Wraps NetworkPolicy templates with a Helm conditional so they are only
+    deployed when global.networkPolicies.enabled is true.
+
+    Args:
+        helmChart: Path to the Helm chart directory
+        branch: Branch name for version compatibility checks
+    """
+    logging.info("Wrapping NetworkPolicy templates with networkPolicies.enabled condition ...")
+    networkPolicyTemplates = find_templates_of_type(helmChart, "NetworkPolicy", branch)
+    for template_path in networkPolicyTemplates:
+        f = open(template_path, "r")
+        content = f.read()
+        f.close()
+        if '{{- if .Values.global.networkPolicies.enabled }}' not in content:
+            if not content.endswith('\n'):
+                content += '\n'
+            wrapped = '{{- if .Values.global.networkPolicies.enabled }}\n' + content + '{{- end }}\n'
+            a_file = open(template_path, "w")
+            a_file.write(wrapped)
+            a_file.close()
+            logging.info("Wrapped NetworkPolicy template: %s", template_path)
+    logging.info("NetworkPolicy wrapping complete.\n")
+
+
 # Given a resource Kind, return all filepaths of that resource type in a chart directory
 def find_templates_of_type(helmChart, kind, branch):
     """_summary_
@@ -1435,6 +1461,8 @@ def injectRequirements(helm_chart_path, operator, sizes, branch):
     # Updates RBAC and deployment configuration in the Helm chart.
     updateRBAC(helm_chart_path, branch)
     updateDeployments(helm_chart_path, operator, exclusions, sizes, branch)
+
+    wrapNetworkPoliciesWithCondition(helm_chart_path, branch)
 
     logging.info("Updated Chart '%s' successfully\n", helm_chart_path)
     return []
