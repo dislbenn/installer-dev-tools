@@ -1246,6 +1246,25 @@ def update_helm_resources(chartName, helmChart, skip_rbac_overrides, exclusions,
 
     logging.info("Resource updating process completed.")
 
+
+def wrapNetworkPoliciesWithCondition(helmChart):
+    logging.info("Wrapping NetworkPolicy templates with networkPolicies.enabled condition ...")
+    networkPolicyTemplates = find_templates_of_type(helmChart, "NetworkPolicy")
+    for template_path in networkPolicyTemplates:
+        f = open(template_path, "r")
+        content = f.read()
+        f.close()
+        if '{{- if .Values.global.networkPolicies.enabled }}' not in content:
+            if not content.endswith('\n'):
+                content += '\n'
+            wrapped = '{{- if .Values.global.networkPolicies.enabled }}\n' + content + '{{- end }}\n'
+            a_file = open(template_path, "w")
+            a_file.write(wrapped)
+            a_file.close()
+            logging.info("Wrapped NetworkPolicy template: %s", template_path)
+    logging.info("NetworkPolicy wrapping complete.\n")
+
+
 # injectAnnotationsForAddonTemplate injects following annotations for deployments in the AddonTemplate:
 # - target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
 def injectAnnotationsForAddonTemplate(helmChart):
@@ -1465,6 +1484,8 @@ def injectRequirements(helm_chart_path, chart, branch):
         update_helm_resources(chart_name, helm_chart_path, skip_rbac_overrides, exclusions, inclusions, branch)
 
     updateDeployments(chart_name, helm_chart_path, exclusions, inclusions, branch)
+
+    wrapNetworkPoliciesWithCondition(helm_chart_path)
 
     logging.info("Updated Chart '%s' successfully", helm_chart_path)
 
