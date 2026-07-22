@@ -709,6 +709,8 @@ def update_helm_resources(chartName, helmChart, skip_rbac_overrides, exclusions,
         "Secret", "Service", "StatefulSet", "Job"
     ]
 
+    network_policy_templates = []
+
     for kind in resource_kinds:
         resource_templates = find_templates_of_type(helmChart, kind, branch)
         if not resource_templates:
@@ -759,12 +761,16 @@ def update_helm_resources(chartName, helmChart, skip_rbac_overrides, exclusions,
                     yaml.dump(resource_data, f, width=float("inf"), default_flow_style=False, allow_unicode=True)
                     logging.info(f"Succesfully updated resource: {resource_name}\n")
 
-                # Ensure NetworkPolicy templates are wrapped with a Helm conditional to only deploy when enabled.
                 if kind == 'NetworkPolicy':
-                    ensure_network_policies(template_path)
+                    network_policy_templates.append(template_path)
 
             except Exception as e:
                 logging.error(f"Error processing template '{template_path}': {e}")
+
+    # Ensure NetworkPolicy templates are wrapped with a Helm conditional to only deploy when enabled.
+    # Done after all kinds are processed to avoid breaking yaml.safe_load for subsequent kind iterations.
+    for template_path in network_policy_templates:
+        ensure_network_policies(template_path)
 
     logging.info("Resource updating process completed.")
 
