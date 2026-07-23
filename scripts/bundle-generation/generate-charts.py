@@ -1084,6 +1084,8 @@ def update_helm_resources(chartName, helmChart, skip_rbac_overrides, exclusions,
         "PodDisruptionBudget", "Role", "RoleBinding", "Route", "Secret", "Service", "StatefulSet"
     ]
 
+    network_policy_templates = []
+
     for kind in resource_kinds:
         resource_templates = find_templates_of_type(helmChart, kind)
         if not resource_templates:
@@ -1179,7 +1181,6 @@ def update_helm_resources(chartName, helmChart, skip_rbac_overrides, exclusions,
                 if kind == 'PersistentVolumeClaim':
                     ensure_pvc_storage_class(resource_data, resource_name)
                 
-
                 if chartName == 'flight-control':
                     if kind == 'Route':
                         if resource_name == 'flightctl-api-route':
@@ -1241,28 +1242,36 @@ def update_helm_resources(chartName, helmChart, skip_rbac_overrides, exclusions,
                     yaml.dump(resource_data, f, width=float("inf"), default_flow_style=False, allow_unicode=True)
                     logging.info(f"Succesfully updated resource: {resource_name}\n")
 
+                if kind == 'NetworkPolicy':
+                    network_policy_templates.append(template_path)
+
             except Exception as e:
                 logging.error(f"Error processing template '{template_path}': {e}")
+
+    # Ensure NetworkPolicy templates are wrapped with a Helm conditional to only deploy when enabled.
+    # Done after all kinds are processed to avoid breaking yaml.safe_load for subsequent kind iterations.
+    for template_path in network_policy_templates:
+        ensure_network_policies(template_path)
 
     logging.info("Resource updating process completed.")
 
 
-def wrapNetworkPoliciesWithCondition(helmChart):
-    logging.info("Wrapping NetworkPolicy templates with networkPolicies.enabled condition ...")
-    networkPolicyTemplates = find_templates_of_type(helmChart, "NetworkPolicy")
-    for template_path in networkPolicyTemplates:
-        f = open(template_path, "r")
+def ensure_network_policies(template_path):
+    """Wraps a NetworkPolicy template with a Helm conditional so it is only
+    deployed when global.networkPolicies.enabled is true."""
+    with open(template_path, "r") as f:
         content = f.read()
-        f.close()
-        if '{{- if .Values.global.networkPolicies.enabled }}' not in content:
-            if not content.endswith('\n'):
-                content += '\n'
-            wrapped = '{{- if .Values.global.networkPolicies.enabled }}\n' + content + '{{- end }}\n'
-            a_file = open(template_path, "w")
-            a_file.write(wrapped)
-            a_file.close()
-            logging.info("Wrapped NetworkPolicy template: %s", template_path)
-    logging.info("NetworkPolicy wrapping complete.\n")
+    if '{{- if .Values.global.networkPolicies.enabled }}' in content:
+        return
+
+    if not content.endswith('\n'):
+        content += '\n'
+
+    wrapped = '{{- if .Values.global.networkPolicies.enabled }}\n' + content + '{{- end }}\n'
+    with open(template_path, "w") as f:
+        f.write(wrapped)
+
+    logging.info("Wrapped NetworkPolicy template with networkPolicies.enabled condition: %s", template_path)
 
 
 # injectAnnotationsForAddonTemplate injects following annotations for deployments in the AddonTemplate:
@@ -1484,8 +1493,6 @@ def injectRequirements(helm_chart_path, chart, branch):
         update_helm_resources(chart_name, helm_chart_path, skip_rbac_overrides, exclusions, inclusions, branch)
 
     updateDeployments(chart_name, helm_chart_path, exclusions, inclusions, branch)
-
-    wrapNetworkPoliciesWithCondition(helm_chart_path)
 
     logging.info("Updated Chart '%s' successfully", helm_chart_path)
 
