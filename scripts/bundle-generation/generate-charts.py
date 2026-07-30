@@ -1277,6 +1277,58 @@ def ensure_network_policies(template_path):
     logging.info("Wrapped NetworkPolicy template with networkPolicies.enabled condition: %s", template_path)
 
 
+def ensure_addontemplate_network_policies(helmChart):
+    """Wraps NetworkPolicy manifests embedded inside AddOnTemplate resources
+    with a Helm conditional so they are only deployed when
+    global.networkPolicies.enabled is true."""
+    addonTemplates = find_templates_of_type(helmChart, 'AddOnTemplate')
+    for addonTemplate in addonTemplates:
+        with open(addonTemplate, 'r') as f:
+            content = f.read()
+
+        if 'kind: NetworkPolicy' not in content:
+            continue
+
+        if '{{- if .Values.global.networkPolicies.enabled }}' in content:
+            continue
+
+        lines = content.split('\n')
+        result = []
+        i = 0
+        while i < len(lines):
+            if (i + 1 < len(lines) and
+                'apiVersion: networking.k8s.io/v1' in lines[i] and
+                lines[i].lstrip().startswith('- apiVersion:') and
+                'kind: NetworkPolicy' in lines[i + 1]):
+
+                indent = lines[i][:len(lines[i]) - len(lines[i].lstrip())]
+
+                result.append(f'{indent}{{{{- if .Values.global.networkPolicies.enabled }}}}')
+                result.append(lines[i])
+                i += 1
+
+                item_prefix = indent + '- '
+                continuation_indent = indent + '  '
+                while i < len(lines):
+                    if lines[i] == '':
+                        result.append(lines[i])
+                        i += 1
+                        continue
+                    if lines[i].startswith(item_prefix) or (lines[i].strip() and not lines[i].startswith(continuation_indent)):
+                        break
+                    result.append(lines[i])
+                    i += 1
+
+                result.append(f'{indent}{{{{- end }}}}')
+            else:
+                result.append(lines[i])
+                i += 1
+
+        with open(addonTemplate, 'w') as f:
+            f.write('\n'.join(result))
+        logging.info("Wrapped NetworkPolicy in AddOnTemplate with networkPolicies.enabled condition: %s", addonTemplate)
+
+
 # injectAnnotationsForAddonTemplate injects following annotations for deployments in the AddonTemplate:
 # - target.workload.openshift.io/management: '{"effect": "PreferredDuringScheduling"}'
 def injectAnnotationsForAddonTemplate(helmChart):
@@ -1485,6 +1537,7 @@ def injectRequirements(helm_chart_path, chart, branch):
     fixEnvVarImageReferences(helm_chart_path, image_mappings)
     fixImageReferencesForAddonTemplate(helm_chart_path, image_mappings)
     injectAnnotationsForAddonTemplate(helm_chart_path)
+    ensure_addontemplate_network_policies(helm_chart_path)
 
     if not skip_rbac_overrides:
         updateRBAC(helm_chart_path, chart_name)
