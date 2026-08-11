@@ -1473,6 +1473,22 @@ def addCRDs(repo, operator, outputDir, branch, preservedFiles=None, overwrite=Fa
     """
     Add Custom Resource Definitions (CRDs) to the specified output directory.
 
+    Every ".yaml" file in the bundle's manifests directory is inspected for a
+    CustomResourceDefinition, since CRD files are not guaranteed to follow any
+    particular naming convention across upstream repos. Files that cannot be
+    parsed as plain YAML (for example, bundle manifests that embed Helm/Go
+    template syntax) are skipped rather than aborting the whole run.
+
+    Skipped files are logged with an "UNPARSEABLE_MANIFEST:" prefix so callers
+    (e.g. CI) can grep for exactly this condition without matching the many
+    unrelated INFO/WARNING log lines this script already emits. This is
+    intentionally non-fatal: it does not raise and is not added to any error
+    list that would fail the run, so a single malformed file in one upstream
+    repo can't block chart generation for every other component in the same
+    run. Downstream automation is expected to surface these to a human (e.g.
+    in the body of an automatically opened PR) for manual verification rather
+    than silently dropping a file that may have been a real CRD.
+
     Args:
         repo (str): The name of the repository.
         operator (dict): The configuration of the operator.
@@ -1481,10 +1497,18 @@ def addCRDs(repo, operator, outputDir, branch, preservedFiles=None, overwrite=Fa
         preservedFiles (list, optional): List of files to preserve. Defaults to None.
         overwrite (bool, optional): Whether to overwrite existing files. Defaults to False.
 
+    Returns:
+        list: Filenames that could not be parsed as YAML and were skipped.
+        Empty if every file was scanned successfully. This is informational
+        only — it is not treated as a fatal error by this function or its
+        caller.
+
     Raises:
         ValueError: If bundlePath is not found or if CRD file copying fails.
     """
     logging.info("Adding Custom Resource Definitions (CRDs) for operator: %s", operator['name'])
+
+    skipped_files = []
 
     if 'bundlePath' in operator:
         manifestsPath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "tmp", repo, operator["bundlePath"])
@@ -1520,13 +1544,30 @@ def addCRDs(repo, operator, outputDir, branch, preservedFiles=None, overwrite=Fa
 
         filepath = os.path.join(manifestsPath, filename)
         with open(filepath, 'r', encoding='utf-8') as f:
+            raw_content = f.read()
+
+        try:
             # Handle multi-document YAML files for ACM 2.16+, MCE 2.11+
             if is_version_compatible(branch, '2.16', '2.11', '2.16'):
-                docs = list(yaml.safe_load_all(f))
+                docs = list(yaml.safe_load_all(raw_content))
             else:
                 # Fallback to single-document for older versions
-                single_doc = yaml.safe_load(f)
+                single_doc = yaml.safe_load(raw_content)
                 docs = [single_doc] if single_doc else []
+        except yaml.YAMLError as e:
+            hint = (
+                "file appears to contain Go/Helm template syntax ('{{ }}'), "
+                "which is not valid standalone YAML"
+                if "{{" in raw_content
+                else "file is not valid YAML"
+            )
+            logging.warning(
+                "UNPARSEABLE_MANIFEST: Skipped '%s' for operator '%s' while scanning for "
+                "CRDs — %s. Error: %s",
+                filename, operator['name'], hint, e,
+            )
+            skipped_files.append(filename)
+            continue
 
         # Check each document for CRDs
         for doc in docs:
@@ -1540,7 +1581,14 @@ def addCRDs(repo, operator, outputDir, branch, preservedFiles=None, overwrite=Fa
                     logging.info("CRD file copied: %s", filename)
                 break  # Only copy the file once even if it has multiple CRDs
 
+    if skipped_files:
+        logging.warning(
+            "CRD scan for operator '%s' skipped %d unparseable file(s): %s",
+            operator['name'], len(skipped_files), ", ".join(skipped_files),
+        )
+
     logging.info("CRDs added successfully for operator: %s", operator['name'])
+    return skipped_files
 
 def getBundleManifestsPath(repo, operator):
     """
