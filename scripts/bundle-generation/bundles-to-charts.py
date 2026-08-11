@@ -2019,14 +2019,6 @@ def main():
             else:
                 git_url = github_ref
 
-            logging.info("Cloning repository: %s from %s", repo_name, git_url)
-            repo_path = os.path.join(SCRIPT_DIR, "tmp", repo_name)
-
-            if os.path.exists(repo_path):
-                shutil.rmtree(repo_path)
-
-            repository = Repo.clone_from(git_url, repo_path)
-
             # Check for branch override first, then use config branch
             if repo_name in component_branch_overrides:
                 branch_to_use = component_branch_overrides[repo_name]
@@ -2034,7 +2026,16 @@ def main():
             else:
                 branch_to_use = branch
 
-            repository.git.checkout(branch_to_use)
+            logging.info("Cloning repository: %s from %s (branch=%s)", repo_name, git_url, branch_to_use)
+            repo_path = os.path.join(SCRIPT_DIR, "tmp", repo_name)
+
+            if os.path.exists(repo_path):
+                shutil.rmtree(repo_path)
+
+            # Shallow, single-branch clone: only the tip commit of the target
+            # branch is needed, since this script only reads current file
+            # contents (CSVs/CRDs/manifests) and never inspects history.
+            Repo.clone_from(git_url, repo_path, branch=branch_to_use, depth=1)
 
             sizesyaml = repo_path + "/bundle/manifests/sizes.yaml"
             if os.path.isfile(sizesyaml):

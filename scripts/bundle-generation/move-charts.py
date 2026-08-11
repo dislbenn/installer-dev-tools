@@ -348,15 +348,21 @@ def main():
 
     # Loop through each repo in the config.yaml
     for repo in components:
-        logging.info("Cloning: %s", repo["repo_name"])
         repo_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "tmp/" + repo["repo_name"]) # Path to clone repo to
         if os.path.exists(repo_path): # If path exists, remove and re-clone
             shutil.rmtree(repo_path)
 
-        repository = Repo.clone_from(repo["github_ref"], repo_path) # Clone repo to above path
         branch = repo.get('branch', 'main')  # Default to 'main' if no branch specified
+
+        # Shallow, single-branch clone: only the tip commit of the target
+        # branch is needed, since this script only reads current file
+        # contents and never inspects history. Fall back to a shallow clone
+        # of the repository's default branch if none was specified.
+        logging.info("Cloning: %s (branch=%s)", repo["repo_name"], repo.get('branch', '<default>'))
         if 'branch' in repo:
-            repository.git.checkout(repo['branch']) # If a branch is specified, checkout that branch
+            Repo.clone_from(repo["github_ref"], repo_path, branch=repo['branch'], depth=1) # Clone repo to above path
+        else:
+            Repo.clone_from(repo["github_ref"], repo_path, depth=1) # Clone repo to above path
 
         # Loop through each operator in the repo identified by the config
         for chart in repo["charts"]:
