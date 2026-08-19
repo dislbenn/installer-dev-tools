@@ -1504,7 +1504,12 @@ def addCRDs(repo, operator, outputDir, branch, preservedFiles=None, overwrite=Fa
         caller.
 
     Raises:
-        ValueError: If bundlePath is not found or if CRD file copying fails.
+        ValueError: If bundlePath is specified but does not exist.
+        OSError: If copying a CRD file to the destination directory fails
+            (propagated from shutil.copyfile).
+        SystemExit: Propagated from getBundleManifestsPath() when bundlePath
+            is not specified and the derived bundle path, bundles directory,
+            or channel annotations cannot be found.
     """
     logging.info("Adding Custom Resource Definitions (CRDs) for operator: %s", operator['name'])
 
@@ -2026,6 +2031,11 @@ def main():
             else:
                 branch_to_use = branch
 
+            # Downstream calls (get_csv_path, addCRDs, etc.) must use the branch
+            # that was actually cloned, not the raw config value, so an active
+            # component-branch override is honored consistently.
+            effective_branch = branch_to_use
+
             logging.info("Cloning repository: %s from %s (branch=%s)", repo_name, git_url, branch_to_use)
             repo_path = os.path.join(SCRIPT_DIR, "tmp", repo_name)
 
@@ -2045,6 +2055,9 @@ def main():
                 sizes = {}
 
         elif "gen_command" in repo:
+            # No branch-override concept on this path; the raw config branch
+            # is exactly what's passed to the generation tool below.
+            effective_branch = branch
             try:
                 # repo.branch specifies the branch or SHA the tool should use for input.
                 # repo.bundlePath specifies the directory into which the bundle manifest
@@ -2095,7 +2108,7 @@ def main():
             bundlepath = getBundleManifestsPath(repo["repo_name"], operator)
             logging.info("The latest bundle path for channel is %s", bundlepath)
 
-            csvPath = get_csv_path(repo["repo_name"], operator, branch)
+            csvPath = get_csv_path(repo["repo_name"], operator, effective_branch)
             if csvPath == "":
                 # Validate the bundlePath exists in config.yaml
                 logging.error("Unable to find given channel: %s", operator.get("channel", "Channel not specified"))
@@ -2129,7 +2142,7 @@ def main():
             operator_backup = backup_operator_output(destination, operator["name"])
             try:
                 # Copy over all CRDs to the destination directory from the manifest folder
-                addCRDs(repo["repo_name"], operator, destination, branch, preservedFiles)
+                addCRDs(repo["repo_name"], operator, destination, effective_branch, preservedFiles)
 
                 # If name is empty, fail
                 helmChart = operator["name"]
@@ -2154,7 +2167,7 @@ def main():
                 # Add all basic resources to the helm chart from the CSV
                 logging.info("Adding Resources from CSV to helm chart '%s' ...", operator["name"])
                 extract_csv_resources(helmChart, csvPath)
-                copy_additional_resources(helmChart, csvPath, branch)
+                copy_additional_resources(helmChart, csvPath, effective_branch)
 
                 # In ACM 2.12+ we need to handle webhooks for components, so it's necessary to verify if any webhook paths
                 # are available and include manifest files for processing.
@@ -2163,12 +2176,12 @@ def main():
                     for path in webhook_paths:
                         copy_webhook_configuration_manifests(helmChart, os.path.join(SCRIPT_DIR, "tmp", repo_name, path))
 
-                escape_template_variables(helmChart, escaped_variables, branch)
+                escape_template_variables(helmChart, escaped_variables, effective_branch)
                 logging.info("Resources added from CSV successfully.\n")
 
                 if not skipOverrides:
                     logging.info("Adding Overrides to helm chart '%s' (set --skipOverrides=true to skip) ...", operator["name"])
-                    chart_errors = injectRequirements(helmChart, operator, sizes, branch)
+                    chart_errors = injectRequirements(helmChart, operator, sizes, effective_branch)
                     errors.extend(chart_errors)
                     if chart_errors:
                         restore_operator_output(destination, operator["name"], operator_backup)

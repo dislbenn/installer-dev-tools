@@ -352,17 +352,18 @@ def main():
         if os.path.exists(repo_path): # If path exists, remove and re-clone
             shutil.rmtree(repo_path)
 
-        branch = repo.get('branch', 'main')  # Default to 'main' if no branch specified
-
         # Shallow, single-branch clone: only the tip commit of the target
         # branch is needed, since this script only reads current file
         # contents and never inspects history. Fall back to a shallow clone
         # of the repository's default branch if none was specified.
         logging.info("Cloning: %s (branch=%s)", repo["repo_name"], repo.get('branch', '<default>'))
         if 'branch' in repo:
-            Repo.clone_from(repo["github_ref"], repo_path, branch=repo['branch'], depth=1) # Clone repo to above path
+            branch = repo['branch']
+            Repo.clone_from(repo["github_ref"], repo_path, branch=branch, depth=1) # Clone repo to above path
         else:
-            Repo.clone_from(repo["github_ref"], repo_path, depth=1) # Clone repo to above path
+            cloned_repo = Repo.clone_from(repo["github_ref"], repo_path, depth=1) # Clone repo to above path
+            branch = cloned_repo.active_branch.name
+            logging.info("Resolved default branch for %s: %s", repo["repo_name"], branch)
 
         # Loop through each operator in the repo identified by the config
         for chart in repo["charts"]:

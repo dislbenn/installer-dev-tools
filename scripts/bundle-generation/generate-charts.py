@@ -1787,7 +1787,9 @@ def main():
         if branch:
             Repo.clone_from(git_url, repo_path, branch=branch, depth=1)
         else:
-            Repo.clone_from(git_url, repo_path, depth=1)
+            cloned_repo = Repo.clone_from(git_url, repo_path, depth=1)
+            branch = cloned_repo.active_branch.name
+            logging.info("Resolved default branch for %s: %s", repo_name, branch)
         
         # Loop through each operator in the repo identified by the config
         for chart in repo["charts"]:
