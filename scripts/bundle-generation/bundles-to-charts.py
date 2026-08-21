@@ -1473,6 +1473,22 @@ def addCRDs(repo, operator, outputDir, branch, preservedFiles=None, overwrite=Fa
     """
     Add Custom Resource Definitions (CRDs) to the specified output directory.
 
+    Every ".yaml" file in the bundle's manifests directory is inspected for a
+    CustomResourceDefinition, since CRD files are not guaranteed to follow any
+    particular naming convention across upstream repos. Files that cannot be
+    parsed as plain YAML (for example, bundle manifests that embed Helm/Go
+    template syntax) are skipped rather than aborting the whole run.
+
+    Skipped files are logged with an "UNPARSEABLE_MANIFEST:" prefix so callers
+    (e.g. CI) can grep for exactly this condition without matching the many
+    unrelated INFO/WARNING log lines this script already emits. This is
+    intentionally non-fatal: it does not raise and is not added to any error
+    list that would fail the run, so a single malformed file in one upstream
+    repo can't block chart generation for every other component in the same
+    run. Downstream automation is expected to surface these to a human (e.g.
+    in the body of an automatically opened PR) for manual verification rather
+    than silently dropping a file that may have been a real CRD.
+
     Args:
         repo (str): The name of the repository.
         operator (dict): The configuration of the operator.
@@ -1481,10 +1497,23 @@ def addCRDs(repo, operator, outputDir, branch, preservedFiles=None, overwrite=Fa
         preservedFiles (list, optional): List of files to preserve. Defaults to None.
         overwrite (bool, optional): Whether to overwrite existing files. Defaults to False.
 
+    Returns:
+        list: Filenames that could not be parsed as YAML and were skipped.
+        Empty if every file was scanned successfully. This is informational
+        only — it is not treated as a fatal error by this function or its
+        caller.
+
     Raises:
-        ValueError: If bundlePath is not found or if CRD file copying fails.
+        ValueError: If bundlePath is specified but does not exist.
+        OSError: If copying a CRD file to the destination directory fails
+            (propagated from shutil.copyfile).
+        SystemExit: Propagated from getBundleManifestsPath() when bundlePath
+            is not specified and the derived bundle path, bundles directory,
+            or channel annotations cannot be found.
     """
     logging.info("Adding Custom Resource Definitions (CRDs) for operator: %s", operator['name'])
+
+    skipped_files = []
 
     if 'bundlePath' in operator:
         manifestsPath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "tmp", repo, operator["bundlePath"])
@@ -1520,13 +1549,30 @@ def addCRDs(repo, operator, outputDir, branch, preservedFiles=None, overwrite=Fa
 
         filepath = os.path.join(manifestsPath, filename)
         with open(filepath, 'r', encoding='utf-8') as f:
+            raw_content = f.read()
+
+        try:
             # Handle multi-document YAML files for ACM 2.16+, MCE 2.11+
             if is_version_compatible(branch, '2.16', '2.11', '2.16'):
-                docs = list(yaml.safe_load_all(f))
+                docs = list(yaml.safe_load_all(raw_content))
             else:
                 # Fallback to single-document for older versions
-                single_doc = yaml.safe_load(f)
+                single_doc = yaml.safe_load(raw_content)
                 docs = [single_doc] if single_doc else []
+        except yaml.YAMLError as e:
+            hint = (
+                "file appears to contain Go/Helm template syntax ('{{ }}'), "
+                "which is not valid standalone YAML"
+                if "{{" in raw_content
+                else "file is not valid YAML"
+            )
+            logging.warning(
+                "UNPARSEABLE_MANIFEST: Skipped '%s' for operator '%s' while scanning for "
+                "CRDs — %s. Error: %s",
+                filename, operator['name'], hint, e,
+            )
+            skipped_files.append(filename)
+            continue
 
         # Check each document for CRDs
         for doc in docs:
@@ -1540,7 +1586,14 @@ def addCRDs(repo, operator, outputDir, branch, preservedFiles=None, overwrite=Fa
                     logging.info("CRD file copied: %s", filename)
                 break  # Only copy the file once even if it has multiple CRDs
 
+    if skipped_files:
+        logging.warning(
+            "CRD scan for operator '%s' skipped %d unparseable file(s): %s",
+            operator['name'], len(skipped_files), ", ".join(skipped_files),
+        )
+
     logging.info("CRDs added successfully for operator: %s", operator['name'])
+    return skipped_files
 
 def getBundleManifestsPath(repo, operator):
     """
@@ -1615,13 +1668,28 @@ def get_csv_path(repo, operator, branch):
 
         file_path = os.path.join(manifests_path, file_name)
         with open(file_path, 'r', encoding='utf-8') as f:
+            raw_content = f.read()
+
+        try:
             # Handle multi-document YAML files for ACM 2.16+, MCE 2.11+
             if is_version_compatible(branch, '2.16', '2.11', '2.16'):
-                docs = list(yaml.safe_load_all(f))
+                docs = list(yaml.safe_load_all(raw_content))
             else:
                 # Fallback to single-document for older versions
-                single_doc = yaml.safe_load(f)
+                single_doc = yaml.safe_load(raw_content)
                 docs = [single_doc] if single_doc else []
+        except yaml.YAMLError as e:
+            hint = (
+                "file appears to contain Go/Helm template syntax ('{{ }}'), "
+                "which is not valid standalone YAML"
+                if "{{" in raw_content
+                else "file is not valid YAML"
+            )
+            logging.warning(
+                "UNPARSEABLE_MANIFEST: Skipped '%s' while searching for CSV — %s. Error: %s",
+                file_name, hint, e,
+            )
+            continue
 
         # Check if any document in the file is a ClusterServiceVersion
         for doc in docs:
@@ -1971,14 +2039,6 @@ def main():
             else:
                 git_url = github_ref
 
-            logging.info("Cloning repository: %s from %s", repo_name, git_url)
-            repo_path = os.path.join(SCRIPT_DIR, "tmp", repo_name)
-
-            if os.path.exists(repo_path):
-                shutil.rmtree(repo_path)
-
-            repository = Repo.clone_from(git_url, repo_path)
-
             # Check for branch override first, then use config branch
             if repo_name in component_branch_overrides:
                 branch_to_use = component_branch_overrides[repo_name]
@@ -1986,7 +2046,21 @@ def main():
             else:
                 branch_to_use = branch
 
-            repository.git.checkout(branch_to_use)
+            # Downstream calls (get_csv_path, addCRDs, etc.) must use the branch
+            # that was actually cloned, not the raw config value, so an active
+            # component-branch override is honored consistently.
+            effective_branch = branch_to_use
+
+            logging.info("Cloning repository: %s from %s (branch=%s)", repo_name, git_url, branch_to_use)
+            repo_path = os.path.join(SCRIPT_DIR, "tmp", repo_name)
+
+            if os.path.exists(repo_path):
+                shutil.rmtree(repo_path)
+
+            # Shallow, single-branch clone: only the tip commit of the target
+            # branch is needed, since this script only reads current file
+            # contents (CSVs/CRDs/manifests) and never inspects history.
+            Repo.clone_from(git_url, repo_path, branch=branch_to_use, depth=1)
 
             sizesyaml = repo_path + "/bundle/manifests/sizes.yaml"
             if os.path.isfile(sizesyaml):
@@ -1996,6 +2070,9 @@ def main():
                 sizes = {}
 
         elif "gen_command" in repo:
+            # No branch-override concept on this path; the raw config branch
+            # is exactly what's passed to the generation tool below.
+            effective_branch = branch
             try:
                 # repo.branch specifies the branch or SHA the tool should use for input.
                 # repo.bundlePath specifies the directory into which the bundle manifest
@@ -2046,7 +2123,7 @@ def main():
             bundlepath = getBundleManifestsPath(repo["repo_name"], operator)
             logging.info("The latest bundle path for channel is %s", bundlepath)
 
-            csvPath = get_csv_path(repo["repo_name"], operator, branch)
+            csvPath = get_csv_path(repo["repo_name"], operator, effective_branch)
             if csvPath == "":
                 # Validate the bundlePath exists in config.yaml
                 logging.error("Unable to find given channel: %s", operator.get("channel", "Channel not specified"))
@@ -2080,7 +2157,7 @@ def main():
             operator_backup = backup_operator_output(destination, operator["name"])
             try:
                 # Copy over all CRDs to the destination directory from the manifest folder
-                addCRDs(repo["repo_name"], operator, destination, branch, preservedFiles)
+                addCRDs(repo["repo_name"], operator, destination, effective_branch, preservedFiles)
 
                 # If name is empty, fail
                 helmChart = operator["name"]
@@ -2105,7 +2182,7 @@ def main():
                 # Add all basic resources to the helm chart from the CSV
                 logging.info("Adding Resources from CSV to helm chart '%s' ...", operator["name"])
                 extract_csv_resources(helmChart, csvPath)
-                copy_additional_resources(helmChart, csvPath, branch)
+                copy_additional_resources(helmChart, csvPath, effective_branch)
 
                 # In ACM 2.12+ we need to handle webhooks for components, so it's necessary to verify if any webhook paths
                 # are available and include manifest files for processing.
@@ -2114,12 +2191,12 @@ def main():
                     for path in webhook_paths:
                         copy_webhook_configuration_manifests(helmChart, os.path.join(SCRIPT_DIR, "tmp", repo_name, path))
 
-                escape_template_variables(helmChart, escaped_variables, branch)
+                escape_template_variables(helmChart, escaped_variables, effective_branch)
                 logging.info("Resources added from CSV successfully.\n")
 
                 if not skipOverrides:
                     logging.info("Adding Overrides to helm chart '%s' (set --skipOverrides=true to skip) ...", operator["name"])
-                    chart_errors = injectRequirements(helmChart, operator, sizes, branch)
+                    chart_errors = injectRequirements(helmChart, operator, sizes, effective_branch)
                     errors.extend(chart_errors)
                     if chart_errors:
                         restore_operator_output(destination, operator["name"], operator_backup)

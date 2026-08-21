@@ -1758,7 +1758,6 @@ def main():
     for repo in components:
         repo_name = repo.get("repo_name")
 
-        logging.info("Cloning: %s", repo_name)
         repo_path = os.path.join(SCRIPT_DIR, "tmp", repo_name)
 
         if os.path.exists(repo_path): # If path exists, remove and re-clone
@@ -1768,20 +1767,29 @@ def main():
         if repo_name in component_fork_overrides:
             git_url = component_fork_overrides[repo_name]
             logging.info(f"Using fork override for {repo_name}: {git_url}")
-            repository = Repo.clone_from(git_url, repo_path)
         else:
-            repository = Repo.clone_from(repo["github_ref"], repo_path) # Clone repo to above path
+            git_url = repo["github_ref"]
 
         # Check for branch override first, then use config branch, or default to empty string
         if repo_name in component_branch_overrides:
             branch = component_branch_overrides[repo_name]
             logging.info(f"Using branch override for {repo_name}: {branch}")
-            repository.git.checkout(branch)
         elif 'branch' in repo:
             branch = repo['branch']
-            repository.git.checkout(branch) # If a branch is specified, checkout that branch
         else:
             branch = ""
+
+        # Shallow, single-branch clone: only the tip commit of the target
+        # branch is needed, since this script only reads current file
+        # contents and never inspects history. Fall back to a shallow clone
+        # of the repository's default branch if none was specified.
+        logging.info("Cloning: %s (branch=%s)", repo_name, branch or "<default>")
+        if branch:
+            Repo.clone_from(git_url, repo_path, branch=branch, depth=1)
+        else:
+            cloned_repo = Repo.clone_from(git_url, repo_path, depth=1)
+            branch = cloned_repo.active_branch.name
+            logging.info("Resolved default branch for %s: %s", repo_name, branch)
         
         # Loop through each operator in the repo identified by the config
         for chart in repo["charts"]:
