@@ -1668,13 +1668,28 @@ def get_csv_path(repo, operator, branch):
 
         file_path = os.path.join(manifests_path, file_name)
         with open(file_path, 'r', encoding='utf-8') as f:
+            raw_content = f.read()
+
+        try:
             # Handle multi-document YAML files for ACM 2.16+, MCE 2.11+
             if is_version_compatible(branch, '2.16', '2.11', '2.16'):
-                docs = list(yaml.safe_load_all(f))
+                docs = list(yaml.safe_load_all(raw_content))
             else:
                 # Fallback to single-document for older versions
-                single_doc = yaml.safe_load(f)
+                single_doc = yaml.safe_load(raw_content)
                 docs = [single_doc] if single_doc else []
+        except yaml.YAMLError as e:
+            hint = (
+                "file appears to contain Go/Helm template syntax ('{{ }}'), "
+                "which is not valid standalone YAML"
+                if "{{" in raw_content
+                else "file is not valid YAML"
+            )
+            logging.warning(
+                "UNPARSEABLE_MANIFEST: Skipped '%s' while searching for CSV — %s. Error: %s",
+                file_name, hint, e,
+            )
+            continue
 
         # Check if any document in the file is a ClusterServiceVersion
         for doc in docs:
