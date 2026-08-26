@@ -60,6 +60,51 @@ class TestEnsureContainerPortProtocols(unittest.TestCase):
         self.assertEqual(port['protocol'], 'TCP')
         self.assertEqual(port['containerPort'], 8443)
 
+    def test_defaults_when_protocol_is_explicit_none(self):
+        """A `protocol: null` in the source CSV must not be preserved as None.
+
+        setdefault() would leave this as None since the key is already
+        present, which would write `protocol: null` to the generated
+        chart. It should be treated the same as a missing protocol.
+        """
+        spec = {
+            'template': {
+                'spec': {
+                    'containers': [
+                        {
+                            'name': 'container1',
+                            'ports': [{'containerPort': 8443, 'protocol': None}],
+                        }
+                    ]
+                }
+            }
+        }
+
+        bundles_to_charts.ensure_container_port_protocols(spec)
+
+        port = spec['template']['spec']['containers'][0]['ports'][0]
+        self.assertEqual(port['protocol'], 'TCP')
+
+    def test_defaults_when_protocol_is_empty_string(self):
+        """An empty-string protocol is also treated as unset."""
+        spec = {
+            'template': {
+                'spec': {
+                    'containers': [
+                        {
+                            'name': 'container1',
+                            'ports': [{'containerPort': 8443, 'protocol': ''}],
+                        }
+                    ]
+                }
+            }
+        }
+
+        bundles_to_charts.ensure_container_port_protocols(spec)
+
+        port = spec['template']['spec']['containers'][0]['ports'][0]
+        self.assertEqual(port['protocol'], 'TCP')
+
     def test_preserves_explicit_non_tcp_protocol(self):
         """An explicitly set protocol (e.g. UDP) must not be overwritten."""
         spec = {

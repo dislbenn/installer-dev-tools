@@ -249,7 +249,12 @@ def ensure_container_port_protocols(deployment_spec):
     )
     for container in containers:
         for port in container.get('ports', []) or []:
-            port.setdefault('protocol', 'TCP')
+            # Use a falsy check rather than setdefault(): a CSV could set
+            # `protocol: null` explicitly, which setdefault would leave as
+            # None (writing `protocol: null` to the chart) since the key
+            # is already present.
+            if not port.get('protocol'):
+                port['protocol'] = 'TCP'
 
 # Copy chart-templates/deployment, update it with CSV deployment information, and add to chart
 def add_deployment(helmChart, deployment):
